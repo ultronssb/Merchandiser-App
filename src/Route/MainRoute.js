@@ -12,6 +12,8 @@ import LoginScreen from '../Screens/LoginScreen';
 import api from '../service/api';
 import LogoutHandler from '../service/LogoutHandler';
 import { font } from '../Settings/Theme';
+import DisplayVendor from '../Screens/DisplayVendor';
+import VendorCreate from '../Screens/CreateVendor';
 
 const screenWidth = Dimensions.get('window').width;
 const isLargeScreen = screenWidth > 768;
@@ -57,7 +59,13 @@ const MainStack = () => {
   const drawerRef = useRef(null);
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-
+  const handleCreate = () => {
+    navigation.navigate('VendorCreate', {
+      isCreateCustomer: true,
+      isEditCustomer: false,
+      customerId: '',
+    });
+  };
   const MAX_RETRIES = 10; // Avoid infinite loop
   const RETRY_DELAY = 1000; // 1 second
 
@@ -134,7 +142,17 @@ const MainStack = () => {
 
 
   const options = [
-
+    {
+      order: 1,
+      displayOrder: 1,
+      label: 'Create Vendor',
+      onPress: () => {
+        closeDrawer();
+        setTimeout(() => {
+          handleCreate();
+        }, 100);
+      },
+    },
     {
       order: 2,
       displayOrder: 1,
@@ -207,6 +225,8 @@ const MainStack = () => {
           />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Logout" component={LogoutHandler} />
+          <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
+          <Stack.Screen name="VendorCreate" component={VendorCreate} />
 
 
         </Stack.Navigator>

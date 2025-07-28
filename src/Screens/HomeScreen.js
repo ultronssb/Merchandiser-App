@@ -1,11 +1,12 @@
-import {StyleSheet, Text, View} from 'react-native';
-import React, {useEffect} from 'react';
-import {storage} from '../common/Common';
+import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { storage } from '../common/Common';
+import DisplayVendor from './DisplayVendor';
 
 const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>HomeScreen</Text>
+      <DisplayVendor />
     </View>
   );
 };
@@ -14,7 +15,7 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
-    flex: 2,
+    flex: 1,
     backgroundColor: '#fff',
   },
 });
