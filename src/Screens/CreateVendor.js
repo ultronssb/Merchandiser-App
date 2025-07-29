@@ -573,10 +573,12 @@ const VendorCreate = () => {
         try {
             setIsLoading(true);
             const modified = { ...address, vendorId: customerId, charge: 0 };
-            const response = await api.post('vendorLocations/save', { json: modified });
+            const response = await api.post('vendorLocations/save',  modified );
 
             if (response.message) {
-                showSuccess('Address saved successfully');
+                showSuccess('Address saved successfully',()=>{
+                    navigation.goBack()
+                });
                 setAddress({
                     nickName: '',
                     address1: '',
@@ -609,10 +611,13 @@ const VendorCreate = () => {
                 ...addr,
                 isPrimary: addr.id === id,
             }));
-            await api.put('locations/update', { json: updatedAddresses });
-            showSuccess('Primary address updated successfully');
+            const res=await api.put('vendorLocations/update',  updatedAddresses );
+            showSuccess('Primary address updated successfully',()=>{
+                navigation.goBack()
+            });
             fetchAddressData();
         } catch (error) {
+            console.log(error?.response||error)
             showError('Failed to update primary address');
         }
     };
