@@ -912,12 +912,12 @@ const VendorCreate = () => {
 
             <AlertBox {...isError} setShowAlert={closeAlert} />
 
-            <View style={styles.header}>
+           {/* <View style={styles.header}>
 
                 <Text style={styles.headerText}>
                     {isEditCustomer ? 'Edit Vendor' : 'Create Vendor'}
                 </Text>
-            </View>
+            </View>*/}
 
             {addresses.length > 0 ? (
                 <>

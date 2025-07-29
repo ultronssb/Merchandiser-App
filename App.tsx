@@ -1,12 +1,12 @@
-import {NavigationContainer} from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import React from 'react';
-import {StyleSheet} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PaperProvider } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AuthStack from './src/Route/MainRoute';
-import {PaperProvider} from 'react-native-paper';
-import {NavigationProvider} from './src/service/context/NavigationContext';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {navigationRef} from './src/service/hook/navigationRef';
+import { NavigationProvider } from './src/service/context/NavigationContext';
+import { navigationRef } from './src/service/hook/navigationRef';
 
 const App = () => {
   return (

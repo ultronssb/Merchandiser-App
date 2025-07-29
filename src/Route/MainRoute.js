@@ -33,9 +33,9 @@ const CustomHeader = () => {
   };
 
   // Use custom headerTitle from route.params if provided, otherwise fallback to formatRouteName
-  const title = route.params?.fromScreen === "CustomerDraft"
+  const title = route.params?.isEditCustomer === true
     ?
-    "Approve Customer" : route.params?.isEdit === true ? "Edit Customer" : formatRouteName(route.name);
+    "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor" : formatRouteName(route.name);
 
   return (
     <View style={styles.header}>
