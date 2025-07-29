@@ -32,9 +32,10 @@ const CustomHeader = () => {
       .replace("Screen", "");
   };
 
-  const title = route.params?.isEditCustomer === true
-    ?
-    "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor" : formatRouteName(route.name);
+  const title = route.params?.isEditCustomer === true ?
+    "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor"
+      : route?.name === "DisplayVendor" ? "Vendor Details"
+        : formatRouteName(route.name);
 
   return (
     <View style={styles.header}>

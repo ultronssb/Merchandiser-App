@@ -159,11 +159,8 @@ const DisplayVendor = () => {
                 rightButtonText={isError.rightButtonText}
             />
             <View style={styles.header}>
-                <Text style={styles.headerText}>Vendor Details</Text>
-                <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
-                    <Icon name="plus" size={20} color="#000" />
-                    <Text style={styles.createButtonText}>Create Vendor</Text>
-                </TouchableOpacity>
+                <Text style={styles.headerText}>Vendor{rowCount > 1 ? 's' : ''} ({rowCount})</Text>
+
             </View>
             <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 }]} // Add padding to avoid overlap
@@ -231,7 +228,7 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
     },
     headerText: {
-        fontSize: 26,
+        fontSize: 20,
         fontFamily: font.bold,
         color: '#000',
     },

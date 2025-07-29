@@ -933,7 +933,7 @@ const VendorCreate = () => {
                                 style={[styles.tabButton, activeTab === tab && styles.activeTab]}
                                 onPress={() => setActiveTab(tab)}
                             >
-                                <Text style={styles.tabText}>{tab}</Text>
+                                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>{tab}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -951,7 +951,7 @@ const VendorCreate = () => {
                                     style={styles.addAddressButton}
                                     onPress={() => setIsModalVisible(true)}
                                 >
-                                    <Icon name="plus-circle" size={20} color="#3c6d8e" />
+                                    <Icon name="plus-circle" size={20} color={common.PRIMARY_COLOR} />
                                     <Text style={styles.addAddressText}>Add Address</Text>
                                 </TouchableOpacity>}
                             />
@@ -1142,7 +1142,7 @@ const styles = StyleSheet.create({
     },
     tabContainer: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
+        backgroundColor: '#acd8ffff',
         borderBottomWidth: 1,
         borderBottomColor: '#ddd',
         paddingHorizontal: 10,
@@ -1155,11 +1155,13 @@ const styles = StyleSheet.create({
         borderBottomColor: 'transparent',
     },
     activeTab: {
-        borderBottomColor: '#3c6d8e',
+        borderBottomColor: common.PRIMARY_COLOR,
+        backgroundColor: '#cde8ffff'
     },
     tabText: {
         fontSize: 14,
-        color: '#3c6d8e', fontFamily: font.semiBold
+        color: common.PRIMARY_COLOR, fontFamily: font.semiBold
+    }, activeTabText: {
     },
     scrollContent: {
         padding: 15,
@@ -1235,11 +1237,11 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#3c6d8e',
+        borderColor: common.PRIMARY_COLOR,
     },
     addAddressText: {
         fontSize: 14,
-        color: '#3c6d8e',
+        color: common.PRIMARY_COLOR,
         marginLeft: 10,
     },
     addressList: {
@@ -1278,10 +1280,10 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: '#3c6d8e',
+        borderColor: common.PRIMARY_COLOR,
     },
     radioSelected: {
-        backgroundColor: '#3c6d8e',
+        backgroundColor: common.PRIMARY_COLOR,
     },
     description: {
         marginBottom: 10,
@@ -1301,7 +1303,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     editButton: {
-        backgroundColor: '#3c6d8e',
+        backgroundColor: common.PRIMARY_COLOR,
         padding: 10,
         borderRadius: 5,
         alignItems: 'center',
@@ -1326,7 +1328,7 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     modalButton: {
-        backgroundColor: '#3c6d8e',
+        backgroundColor: common.PRIMARY_COLOR,
         padding: 10,
         borderRadius: 5,
         alignItems: 'center',
@@ -1353,13 +1355,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     saveButton: {
-        backgroundColor: '#3c6d8e',
+        backgroundColor: common.PRIMARY_COLOR,
     },
     cancelButton: {
         backgroundColor: '#ff4d4f',
     },
     nextButton: {
-        backgroundColor: '#3c6d8e',
+        backgroundColor: common.PRIMARY_COLOR,
     },
     buttonText: {
         fontSize: 14,
