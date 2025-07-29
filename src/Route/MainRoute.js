@@ -32,7 +32,6 @@ const CustomHeader = () => {
       .replace("Screen", "");
   };
 
-  // Use custom headerTitle from route.params if provided, otherwise fallback to formatRouteName
   const title = route.params?.isEditCustomer === true
     ?
     "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor" : formatRouteName(route.name);
