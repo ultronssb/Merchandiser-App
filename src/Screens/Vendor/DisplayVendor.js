@@ -1,20 +1,20 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
-    RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Feather';
-import { font } from '../Settings/Theme';
-import AlertBox from '../common/AlertBox';
-import { common } from '../common/Common';
-import api from '../service/api';
 import { TouchableRipple } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/Feather';
+import { font } from '../../Settings/Theme';
+import AlertBox from '../../common/AlertBox';
+import { common } from '../../common/Common';
+import api from '../../service/api';
 
 const DisplayVendor = () => {
     const isInitialLoad = useRef(true);

@@ -1,30 +1,30 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
+    Image,
+    PermissionsAndroid,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     Vibration,
-    View,
-    Image, ScrollView,
-    PermissionsAndroid
+    View
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Feather';
-import Modal from 'react-native-modal';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { font } from '../Settings/Theme';
-import AlertBox from '../common/AlertBox';
-import { backendUrl, common, storage } from '../common/Common';
-import api from '../service/api';
-import states from '../common/StatesAndDistricts.json';
-import PickerSelect from '../common/PickerSelect';
-import axios from 'axios';
-import RNFS from 'react-native-fs';
 import ReactNativeBlobUtil from 'react-native-blob-util';
-
+import RNFS from 'react-native-fs';
+import { launchImageLibrary } from 'react-native-image-picker';
+import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/Feather';
+import { font } from '../../Settings/Theme';
+import AlertBox from '../../common/AlertBox';
+import { backendUrl, common, storage } from '../../common/Common';
+import PickerSelect from '../../common/PickerSelect';
+import states from '../../common/StatesAndDistricts.json';
+import api from '../../service/api';
 const VendorCreate = () => {
     const navigation = useNavigation();
     const route = useRoute();

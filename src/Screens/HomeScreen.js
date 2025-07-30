@@ -91,17 +91,16 @@ const HomeScreen = () => {
             label="View Vendors"
             onPress={() => handleNavigation('DisplayVendor')}
           />
-
           <HomeButton
-            icon="user-plus"
-            label="Create Vendor"
-            onPress={() => handleNavigation('VendorCreate', {
-              isCreateCustomer: true,
-              isEditCustomer: false,
-              customerId: '',
-            })}
+            icon="plus-square"
+            label="Create Product"
+            onPress={() => handleNavigation('VendorProductCreate')}
           />
-
+          <HomeButton
+            icon="dropbox"
+            label="View Product"
+            onPress={() => handleNavigation('DisplayProduct')}
+          />
         </View>
       </ScrollView>
     </View>

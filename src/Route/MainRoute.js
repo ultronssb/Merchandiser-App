@@ -9,11 +9,13 @@ import Header from '../common/CustomHeader';
 import CustomDrawer from '../common/DrawerContent';
 import HomeScreen from '../Screens/HomeScreen';
 import LoginScreen from '../Screens/LoginScreen';
+import VendorCreate from '../Screens/Vendor/CreateVendor';
+import DisplayVendor from '../Screens/Vendor/DisplayVendor';
 import api from '../service/api';
 import LogoutHandler from '../service/LogoutHandler';
 import { font } from '../Settings/Theme';
-import DisplayVendor from '../Screens/DisplayVendor';
-import VendorCreate from '../Screens/CreateVendor';
+import MinimalProductCreate from '../Screens/Product/VendorMapProduct';
+import ProductDisplay from '../Screens/Product/ProductDisplay';
 
 const screenWidth = Dimensions.get('window').width;
 const isLargeScreen = screenWidth > 768;
@@ -34,7 +36,7 @@ const CustomHeader = () => {
 
   const title = route.params?.isEditCustomer === true ?
     "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor"
-      : route?.name === "DisplayVendor" ? "Vendor Details"
+      : route?.name === "DisplayVendor" ? "Vendor Details" : route?.name === 'DisplayProduct' ? "Products"
         : formatRouteName(route.name);
 
   return (
@@ -227,6 +229,8 @@ const MainStack = () => {
           <Stack.Screen name="Logout" component={LogoutHandler} />
           <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
           <Stack.Screen name="VendorCreate" component={VendorCreate} />
+          <Stack.Screen name="VendorProductCreate" component={MinimalProductCreate} />
+          <Stack.Screen name="DisplayProduct" component={ProductDisplay} />
 
 
         </Stack.Navigator>
