@@ -21,251 +21,9 @@ import PickerSelect from '../../common/PickerSelect';
 import api from '../../service/api';
 import { font } from '../../Settings/Theme';
 import { TouchableRipple } from 'react-native-paper';
+import VendorPicker from '../../common/VendorPicker';
+import CustomToast from '../../service/hook/Toast/CustomToast';
 
-// const VendorPicker = ({ value, onValueChange, placeholder }) => {
-//     const [modalVisible, setModalVisible] = useState(false);
-//     const [vendors, setVendors] = useState([]);
-//     const [searchTerm, setSearchTerm] = useState('');
-//     const [page, setPage] = useState(0);
-//     const [isLoading, setIsLoading] = useState(false);
-//     const [hasMore, setHasMore] = useState(true);
-
-//     const fetchVendors = useCallback(async (search = '', pageNum = 0) => {
-//         if (isLoading || (pageNum > 0 && !hasMore)) return;
-//         setIsLoading(true);
-//         try {
-//             const res = await api.get(`vendor/allAgent?page=${pageNum}&size=10&search=${search}`);
-//             const newVendors = res.response.content || [];
-//             setVendors(prev => pageNum === 0 ? newVendors : [...prev, ...newVendors]);
-//             setHasMore(newVendors.length === 10);
-//         } catch (error) {
-//             console.log('Failed to fetch vendors', error);
-//             Alert.alert('Error', 'Failed to load vendors');
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     }, [isLoading, hasMore]);
-
-//     // const debouncedSearch = useCallback(_.debounce((text) => {
-//     //     setSearchTerm(text);
-//     //     setPage(0);
-//     //     setVendors([]);
-//     //     setHasMore(true);
-//     //     fetchVendors(text, 0);
-//     // }, 500), []);
-
-//     useEffect(() => {
-//         if (modalVisible) {
-//             fetchVendors('', 0);
-//         }
-//         return () => {
-//             setVendors([]);
-//             setPage(0);
-//             setHasMore(true);
-//         };
-//     }, [modalVisible, fetchVendors]);
-
-//     const loadMore = useCallback(_.throttle(() => {
-//         if (hasMore && !isLoading) {
-//             const nextPage = page + 1;
-//             setPage(nextPage);
-//             fetchVendors(searchTerm, nextPage);
-//         }
-//     }, 10000), [hasMore, isLoading, page, searchTerm, fetchVendors]);
-
-//     const handleCloseModal = useCallback(() => {
-//         setModalVisible(false);
-//         setSearchTerm('');
-//         setVendors([]);
-//         setPage(0);
-//         setHasMore(true);
-//     }, []);
-
-//     const selectedVendor = vendors.find(v => v.vendorId === value);
-
-//     return (
-//         <View>
-//             <TouchableOpacity
-//                 style={styles.pickerButton}
-//                 onPress={() => setModalVisible(true)}
-//             >
-//                 <Text style={styles.pickerText}>
-//                     {selectedVendor ? selectedVendor.supplier : placeholder}
-//                 </Text>
-//             </TouchableOpacity>
-//             <Modal
-//                 visible={modalVisible}
-//                 onRequestClose={handleCloseModal}
-//                 transparent
-//                 animationType="fade"
-//             >
-//                 <View style={styles.modalOverlay}>
-//                     <View style={styles.modalContainer}>
-//                         <TextInput
-//                             value={searchTerm}
-//                             onChangeText={debouncedSearch}  
-//                             placeholder="Search vendors"
-//                             style={styles.searchInput}
-//                         />
-//                         <FlatList
-//                             data={vendors}
-//                             keyExtractor={item => item.vendorId.toString()}
-//                             renderItem={({ item }) => (
-//                                 <TouchableOpacity
-//                                     style={styles.vendorItem}
-//                                     onPress={() => {
-//                                         onValueChange(item.vendorId);
-//                                         handleCloseModal();
-//                                     }}
-//                                 >
-//                                     <Text style={styles.vendorText}>{item.supplier}</Text>
-//                                 </TouchableOpacity>
-//                             )}
-//                             onEndReached={loadMore}
-//                             onEndReachedThreshold={0.8}
-//                             ListFooterComponent={isLoading && <ActivityIndicator size="small" color="#007bff" />}
-//                             ListEmptyComponent={!isLoading && <Text>No vendors found</Text>}
-//                         />
-//                         <TouchableOpacity
-//                             style={styles.closeButton}
-//                             onPress={handleCloseModal}
-//                         >
-//                             <Text style={styles.closeText}>Close</Text>
-//                         </TouchableOpacity>
-//                     </View>
-//                 </View>
-//             </Modal>
-//         </View>
-//     );
-// };
-const VendorPicker = ({ value, onValueChange, placeholder }) => {
-    const [modalVisible, setModalVisible] = useState(false);
-    const [vendors, setVendors] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [page, setPage] = useState(0);
-    const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
-
-    // Create refs for state values
-    const isLoadingRef = useRef(isLoading);
-    const hasMoreRef = useRef(hasMore);
-
-    // Update refs when state changes
-    useEffect(() => {
-        isLoadingRef.current = isLoading;
-        hasMoreRef.current = hasMore;
-    }, [isLoading, hasMore]);
-
-    const fetchVendors = useCallback(async (search = '', pageNum = 0) => {
-        // Use ref values instead of state directly
-        if (isLoadingRef.current || (pageNum > 0 && !hasMoreRef.current)) return;
-
-        setIsLoading(true);
-        try {
-            const res = await api.get(`vendor/allAgent?page=${pageNum}&size=10&search=${search}`);
-            const newVendors = res.response.content || [];
-            setVendors(prev => pageNum === 0 ? newVendors : [...prev, ...newVendors]);
-            setHasMore(newVendors.length === 10);
-        } catch (error) {
-            console.log('Failed to fetch vendors', error);
-            Alert.alert('Error', 'Failed to load vendors');
-        } finally {
-            setIsLoading(false);
-        }
-    }, []); // Empty dependencies - function is stable
-
-    const debouncedSearch = useCallback(_.debounce((text) => {
-        setSearchTerm(text);
-        setPage(0);
-        setVendors([]);
-        setHasMore(true);
-        fetchVendors(text, 0);
-    }, 500), [fetchVendors]);
-
-    useEffect(() => {
-        if (modalVisible) {
-            fetchVendors('', 0);
-        }
-        return () => {
-            setVendors([]);
-            setPage(0);
-            setHasMore(true);
-        };
-    }, [modalVisible]); // Only trigger on modalVisible changes
-
-    const loadMore = useCallback(_.throttle(() => {
-        if (hasMoreRef.current && !isLoadingRef.current) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            fetchVendors(searchTerm, nextPage);
-        }
-    }, 10000), [page, searchTerm, fetchVendors]);
-
-    const handleCloseModal = useCallback(() => {
-        setModalVisible(false);
-        setSearchTerm('');
-        setVendors([]);
-        setPage(0);
-        setHasMore(true);
-    }, []);
-
-    const selectedVendor = vendors.find(v => v.vendorId === value);
-
-    return (
-        <View>
-            <TouchableOpacity
-                style={styles.pickerButton}
-                onPress={() => setModalVisible(true)}
-            >
-                <Text style={styles.pickerText}>
-                    {selectedVendor ? selectedVendor.supplier : placeholder}
-                </Text>
-            </TouchableOpacity>
-            <Modal
-                visible={modalVisible}
-                onRequestClose={handleCloseModal}
-                transparent
-                animationType="fade"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <TextInput
-                            value={searchTerm}
-                            onChangeText={debouncedSearch}
-                            placeholder="Search vendors"
-                            style={styles.searchInput}
-                        />
-                        <FlatList
-                            data={vendors}
-                            keyExtractor={item => item.vendorId.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.vendorItem}
-                                    onPress={() => {
-                                        onValueChange(item.vendorId);
-                                        handleCloseModal();
-                                    }}
-                                >
-                                    <Text style={styles.vendorText}>{item.supplier}</Text>
-                                </TouchableOpacity>
-                            )}
-                            onEndReached={loadMore}
-                            onEndReachedThreshold={0.8}
-                            ListFooterComponent={isLoading && <ActivityIndicator size="small" color="#007bff" />}
-                            ListEmptyComponent={!isLoading && <Text>No vendors found</Text>}
-                        />
-                        <TouchableOpacity
-                            style={styles.closeButton}
-                            onPress={handleCloseModal}
-                        >
-                            <Text style={styles.closeText}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-        </View>
-    );
-};
 const MinimalProductCreate = () => {
     const initialProductState = {
         vendorId: '',
@@ -360,7 +118,7 @@ const MinimalProductCreate = () => {
             setFabricContent(category);
         } catch (error) {
             console.log('Error fetching variants:', error);
-            Alert.alert('Error', 'Failed to load fabric content');
+            CustomToast.show('Failed to load fabric content');
         }
     };
 
@@ -401,7 +159,7 @@ const MinimalProductCreate = () => {
             setFabricOptions([{ label: "Select Combination", value: "" }, ...options]);
         } catch (error) {
             console.log("Error fetching fabric values: ", error);
-            Alert.alert('Error', 'Failed to load fabric values');
+            CustomToast.show('Failed to load fabric values');
         }
     };
 
@@ -426,7 +184,7 @@ const MinimalProductCreate = () => {
             setFCCValue(formattedFCC);
         } catch (error) {
             console.log("Error generating fabric content code: ", error);
-            Alert.alert('Error', 'Failed to generate fabric content code');
+            CustomToast.show('Failed to generate fabric content code');
         }
     };
 
@@ -879,7 +637,7 @@ const MinimalProductCreate = () => {
                         )}
                         <View style={styles.totalContainer}>
                             <Text style={styles.totalText}>
-                                Overall Composition Percentage: <Text style={errors[field.key] ? { color: 'red' } : {}}>{totalPercent}%</Text>
+                                Overall Composition Percentage: <Text style={errors[field.key] ? { color: 'red' } : totalPercent === 100 ? { color: 'green' } : {}}>{totalPercent}%</Text>
                             </Text>
                         </View>
                     </View>

@@ -37,7 +37,8 @@ const CustomHeader = () => {
   const title = route.params?.isEditCustomer === true ?
     "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor"
       : route?.name === "DisplayVendor" ? "Vendor Details" : route?.name === 'DisplayProduct' ? "Products"
-        : formatRouteName(route.name);
+        : route?.name === "VendorProductCreate" ? "Create Product"
+          : formatRouteName(route.name);
 
   return (
     <View style={styles.header}>
