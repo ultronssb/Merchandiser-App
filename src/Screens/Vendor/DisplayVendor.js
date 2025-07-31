@@ -6,6 +6,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput, // Added for search input
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -19,10 +20,11 @@ import api from '../../service/api';
 const DisplayVendor = () => {
     const isInitialLoad = useRef(true);
     const [vendorDetails, setVendorDetails] = useState([]);
-    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
+    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
     const [rowCount, setRowCount] = useState(5);
     const [isLoading, setIsLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(''); // New state for search term
     const [isError, setIsError] = useState({
         message: '',
         heading: '',
@@ -41,13 +43,13 @@ const DisplayVendor = () => {
     useEffect(() => {
         setVendorDetails([]);
         getVendor();
-    }, [pagination.pageIndex, pagination.pageSize]);
+    }, [pagination.pageIndex, pagination.pageSize, searchQuery]); // Added searchQuery to dependencies
 
     const getVendor = async () => {
         try {
             setIsLoading(true);
             const res = await api.get(
-                `vendor/allAgent?page=${pagination.pageIndex}&size=${pagination.pageSize}&search=`
+                `vendor/allAgent?page=${pagination.pageIndex}&size=${pagination.pageSize}&search=${encodeURIComponent(searchQuery)}`
             );
             setVendorDetails(res?.response?.content || []);
             setRowCount(res.response?.totalElements || 0);
@@ -69,9 +71,14 @@ const DisplayVendor = () => {
 
     const onRefresh = () => {
         setRefreshing(true);
-        // setPagination({ pageIndex: 0, pageSize: rowCount });
-        setVendorDetails([]);
+        setSearchQuery(''); // Clear search query on refresh
+        setPagination({ pageIndex: 0, pageSize: pagination.pageSize }); // Reset to first page
         getVendor();
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery(''); // Clear the search input
+        setPagination({ pageIndex: 0, pageSize: pagination.pageSize }); // Reset to first page
     };
 
     const columns = useMemo(
@@ -134,10 +141,11 @@ const DisplayVendor = () => {
                     </Text>
                 </View>
             ))}
-            <TouchableRipple rippleColor={'rgba(0, 0, 0, .32)'} style={styles.editButton} onPress={() => handleEdit(item)} borderless={true}><>
-                <Icon name="edit" size={20} color="teal" />
-                <Text style={styles.editButtonText}>Edit</Text>
-            </>
+            <TouchableRipple rippleColor={'rgba(0, 0, 0, .32)'} style={styles.editButton} onPress={() => handleEdit(item)} borderless={true}>
+                <>
+                    <Icon name="edit" size={20} color="teal" />
+                    <Text style={styles.editButtonText}>Edit</Text>
+                </>
             </TouchableRipple>
         </View>
     );
@@ -160,10 +168,38 @@ const DisplayVendor = () => {
             />
             <View style={styles.header}>
                 <Text style={styles.headerText}>Vendor{rowCount > 1 ? 's' : ''} ({rowCount})</Text>
-
+                <View style={styles.headerActions}>
+                    <View style={styles.searchContainer}>
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search vendors..."
+                            value={searchQuery}
+                            onChangeText={(text) => setSearchQuery(text)}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity
+                                style={styles.clearButton}
+                                onPress={handleClearSearch}
+                            >
+                                <Icon name="x" size={20} color="#666" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    {/*<TouchableRipple
+                        rippleColor={'rgba(0, 0, 0, .32)'}
+                        style={styles.createButton}
+                        onPress={handleCreate}
+                        borderless={true}
+                    >
+                        <>
+                            <Icon name="plus" size={20} color="#000" />
+                            <Text style={styles.createButtonText}>Create</Text>
+                        </>
+                    </TouchableRipple>*/}
+                </View>
             </View>
             <ScrollView
-                contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 }]} // Add padding to avoid overlap
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 }]}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -215,8 +251,7 @@ const styles = StyleSheet.create({
     header: {
         paddingVertical: 15,
         paddingHorizontal: 15,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexDirection: 'column',
         alignItems: 'center',
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
@@ -230,7 +265,30 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 20,
         fontFamily: font.bold,
-        color: '#000',
+        color: '#000',alignSelf:'flex-start'
+        ,margin:5
+    },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+        marginRight: 10,
+        paddingHorizontal: 10,
+    },
+    searchInput: {
+        height: 40,
+        fontSize: 14,
+        fontFamily: font.regular,
+        color: '#333',
+        flex: 1,
+    },
+    clearButton: {
+        padding: 5,
     },
     createButton: {
         flexDirection: 'row',
@@ -303,7 +361,7 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     paginationContainer: {
-        position: 'absolute', // Position absolutely at the bottom
+        position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
@@ -312,11 +370,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 15,
         paddingHorizontal: 15,
-        backgroundColor: '#fff', // Add background to avoid transparency
+        backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#ccc',
-        elevation: 2, // Add shadow for Android
-        shadowColor: '#000', // Add shadow for iOS
+        elevation: 2,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
         shadowRadius: 6,

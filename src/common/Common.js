@@ -7,3 +7,7 @@ export const backendUrl = Config.API_URL;
 import { MMKV } from 'react-native-mmkv';
 
 export const storage = new MMKV();
+
+//Merchandiser_V1.1_Dev
+//Merchandiser_V1.1_Uat
+//Merchandiser_V1.1_Live

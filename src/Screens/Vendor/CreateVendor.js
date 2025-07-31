@@ -27,7 +27,7 @@ import states from '../../common/StatesAndDistricts.json';
 import api from '../../service/api';
 const VendorCreate = () => {
     const navigation = useNavigation();
-    const route = useRoute();
+    const route = useRoute();   
     const { isCreateCustomer, isEditCustomer, customerId } = route.params || {};
     const [activeTab, setActiveTab] = useState('General Info');
     const [isLoading, setIsLoading] = useState(false);
@@ -137,7 +137,7 @@ const VendorCreate = () => {
                     isPrimary: true,
                 },
             });
-        } catch (error) {
+        } catch (error) { 
             showError('Failed to fetch vendor data');
         } finally {
             setIsLoading(false);
