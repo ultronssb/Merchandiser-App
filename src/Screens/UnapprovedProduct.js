@@ -16,9 +16,11 @@ import AlertBox from '../common/AlertBox';
 import { font } from '../Settings/Theme';
 import { backendUrl, common } from '../common/Common';
 import moment from 'moment';
+import { useNavigation } from '@react-navigation/native';
 
 const RequestMoveScreen = ({ route }) => {
     const params = route.params;
+    const navigation = useNavigation();
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [rowCount, setRowCount] = useState(0);
@@ -148,7 +150,9 @@ const RequestMoveScreen = ({ route }) => {
 
     const renderCard = ({ item, index }) => {
         return (
-            <View style={styles.cardContainer} key={index}>
+            <TouchableOpacity style={styles.cardContainer} key={index}onPress={() => {
+                navigation.navigate('VendorProductCreate', { productId: item?.draftProductId });
+            }}>
                 {item.image ? (
                     <Image
                         source={{ uri: `${backendUrl}${item.image.replace('/api', '')}` }}
@@ -169,7 +173,7 @@ const RequestMoveScreen = ({ route }) => {
                         </View>
                     ))}
                 </View>
-            </View>
+            </TouchableOpacity>
         );
     };
 
