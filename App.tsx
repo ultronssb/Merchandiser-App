@@ -7,11 +7,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import AuthStack from './src/Route/MainRoute';
 import {NavigationProvider} from './src/service/context/NavigationContext';
 import {navigationRef} from './src/service/hook/navigationRef';
-// import {
-//   ToastContext,
-//   ToastProvider,
-// } from './src/Service/Hook/Toast/CustomToastContext';
-// import {setToastRef} from './src/Service/Hook/Toast/CustomToast';
 import {
   ToastContext,
   ToastProvider,

@@ -19,7 +19,7 @@ export const ToastProvider = ({ children }) => {
     const [toastQueue, setToastQueue] = useState([]); // Queue for pending toasts
     const opacity = useRef(new Animated.Value(0)).current;
     const animationRef = useRef(null); // Track the current animation
-    const isProcessingRef = useRef(false); // Track if a toast is being processed
+    // const isProcessingRef = useRef(false); // Track if a toast is being processed
 
     const theme = 'dark'; // Hardcoded as per your code
     // const theme = Appearance.getColorScheme();
@@ -29,9 +29,9 @@ export const ToastProvider = ({ children }) => {
 
     // Process the next toast in the queue
     const processNextToast = useCallback(() => {
-        if (isProcessingRef.current || toastQueue.length === 0) return;
+        if (toastQueue.length === 0) return;
 
-        isProcessingRef.current = true;
+        // isProcessingRef.current = true;
 
         // Get the next toast from the queue
         setToastQueue(prev => {
@@ -65,7 +65,7 @@ export const ToastProvider = ({ children }) => {
         animationRef.current.start(() => {
             setToast(prev => (prev.visible ? { ...prev, visible: false } : prev));
             animationRef.current = null;
-            isProcessingRef.current = false;
+            // isProcessingRef.current = false;
             // Process the next toast after a short delay to ensure smooth transition
             setTimeout(() => processNextToast(), 100);
         });
@@ -77,9 +77,9 @@ export const ToastProvider = ({ children }) => {
         setToastQueue(prev => [...prev, { message: msg, withIcon: icon }]);
 
         // Start processing if not already processing
-        if (!isProcessingRef.current) {
-            processNextToast();
-        }
+        // if (!isProcessingRef.current) {
+        //     processNextToast();
+        // }
     }, [processNextToast]);
 
     // Cleanup animations on component unmount
@@ -89,7 +89,7 @@ export const ToastProvider = ({ children }) => {
                 animationRef.current.stop();
                 animationRef.current = null;
             }
-            isProcessingRef.current = false;
+            // isProcessingRef.current = false;
             setToastQueue([]); // Clear queue on unmount
         };
     }, []);

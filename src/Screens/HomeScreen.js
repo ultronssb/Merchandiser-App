@@ -87,20 +87,21 @@ const HomeScreen = () => {
         <View style={styles.buttonGrid}>
 
           <HomeButton
-            icon="users"
-            label="View Vendors"
-            onPress={() => handleNavigation('DisplayVendor')}
+            icon="info-circle"  // Changed from "users" to "info-circle" for information
+            label="Request Information"
+            onPress={() => handleNavigation('RequestInformationScreen', { requestInfo: true })}
           />
           <HomeButton
-            icon="plus-square"
-            label="Create Product"
-            onPress={() => handleNavigation('VendorProductCreate')}
+            icon="file-text"  // Changed from "plus-square" to "file-text" for drafts
+            label="Draft Product"
+            onPress={() => handleNavigation('DraftProductScreen', { requestInfo: null })}
           />
           <HomeButton
-            icon="dropbox"
-            label="View Product"
-            onPress={() => handleNavigation('DisplayProduct')}
+            icon="hourglass"  // Changed from "dropbox" to "hourglass" for pending/awaiting approval
+            label="Unapproved Products"
+            onPress={() => handleNavigation('UnapprovedProducts', { requestInfo: false })}
           />
+          
         </View>
       </ScrollView>
     </View>

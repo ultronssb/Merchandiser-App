@@ -7,15 +7,17 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { storage } from '../common/Common';
 import Header from '../common/CustomHeader';
 import CustomDrawer from '../common/DrawerContent';
+import DraftProduct from '../Screens/DraftProduct';
 import HomeScreen from '../Screens/HomeScreen';
 import LoginScreen from '../Screens/LoginScreen';
+import MinimalProductCreate from '../Screens/Product/VendorMapProduct';
+import RequestMoveScreen from '../Screens/RequestMoveScreen';
+import UnapprovedProduct from '../Screens/UnapprovedProduct';
 import VendorCreate from '../Screens/Vendor/CreateVendor';
 import DisplayVendor from '../Screens/Vendor/DisplayVendor';
 import api from '../service/api';
 import LogoutHandler from '../service/LogoutHandler';
 import { font } from '../Settings/Theme';
-import MinimalProductCreate from '../Screens/Product/VendorMapProduct';
-import ProductDisplay from '../Screens/Product/ProductDisplay';
 
 const screenWidth = Dimensions.get('window').width;
 const isLargeScreen = screenWidth > 768;
@@ -156,6 +158,27 @@ const MainStack = () => {
         }, 100);
       },
     },
+      {
+      order: 1,
+      displayOrder: 1,
+      label: 'View Vendor',
+      onPress: () => {
+        closeDrawer();
+        setTimeout(() => {
+          navigation.navigate("DisplayVendor")
+        }, 100);
+      },
+    },  {
+      order: 1,
+      displayOrder: 1,
+      label: 'Create Product',
+      onPress: () => {
+        closeDrawer();
+        setTimeout(() => {
+           navigation.navigate("VendorProductCreate")
+        }, 100);
+      },
+    },
     {
       order: 2,
       displayOrder: 1,
@@ -231,7 +254,10 @@ const MainStack = () => {
           <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
           <Stack.Screen name="VendorCreate" component={VendorCreate} />
           <Stack.Screen name="VendorProductCreate" component={MinimalProductCreate} />
-          <Stack.Screen name="DisplayProduct" component={ProductDisplay} />
+           <Stack.Screen name="RequestInformationScreen" component={RequestMoveScreen} />
+          <Stack.Screen name="DraftProductScreen" component={DraftProduct} />
+          <Stack.Screen name="UnapprovedProducts" component={UnapprovedProduct} />
+
 
 
         </Stack.Navigator>

@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import { font } from '../Settings/Theme';
 import { TouchableRipple } from 'react-native-paper';
 import Feather from 'react-native-vector-icons/Feather';
@@ -47,9 +47,22 @@ const LoginScreen = () => {
     const res = storage.getString('token');
 
     if (res) {
-      navigation.navigate('Home');
+clearStackAndNavigate();
     }
   }, []);
+
+    const clearStackAndNavigate = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: "Home",
+          },
+        ],
+      })
+    );
+  };
   const sendData = async () => {
     setLoading(true);
     Keyboard.dismiss();
@@ -70,7 +83,7 @@ const LoginScreen = () => {
         isLeft: false,
         rightButtonText: 'OK',
         triggerFunction: () => {
-          navigation.navigate('Home');
+        clearStackAndNavigate();
         },
         setShowAlert: () => {
           isError.setShowAlert(false);

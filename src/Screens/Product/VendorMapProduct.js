@@ -23,8 +23,13 @@ import { font } from '../../Settings/Theme';
 import { TouchableRipple } from 'react-native-paper';
 import VendorPicker from '../../common/VendorPicker';
 import CustomToast from '../../service/hook/Toast/CustomToast';
+import axios from 'axios';
+import { backendUrl, storage } from '../../common/Common';
+import { useNavigation } from '@react-navigation/native';
+import { compatibilityFlags } from 'react-native-screens';
 
 const MinimalProductCreate = () => {
+    const navigation = useNavigation();
     const initialProductState = {
         vendorId: '',
         vendorProductName: '',
@@ -476,17 +481,34 @@ const MinimalProductCreate = () => {
             Vibration.vibrate(100);
             return;
         }
-
+const token =storage.getString('token')
         setIsSubmitting(true);
         const formData = new FormData();
-        formData.append('vendorId', product.vendorId);
-        formData.append('vendorProductName', product.vendorProductName);
-        formData.append('gsm', product.gsm);
+        let updatedProduct = {...product}
+        // formData.append('vendorId', product.vendorId);
+        // formData.append('vendorProductName', product.vendorProductName);
+        // formData.append('gsm', product.gsm);
+        // if (product.fabricContent.value) {
+        //     formData.append('composition', product.fabricContent.value);
+        // } else {
+        //     formData.append('composition', null);
+        // }
+        console.log("first231")
+        console.log(product)
+if (!updatedProduct.metrics) {
+    updatedProduct.metrics = {};
+}
+
+if (product.gsm && product.gsm.length > 0) {
+    updatedProduct.metrics.weight = product.gsm;
+}
+console.log("first")
         if (product.fabricContent.value) {
-            formData.append('composition', product.fabricContent.value);
-        } else {
-            formData.append('composition', null);
+            updatedProduct.fabricContent.value = product.fabricContent.value
+        }else{
+            updatedProduct.fabricContent.value = null
         }
+        formData.append('product', JSON.stringify(updatedProduct));
         if (product.imageFile) {
             formData.append('image', {
                 uri: product.imageFile.uri,
@@ -496,16 +518,17 @@ const MinimalProductCreate = () => {
         }
 
         try {
-            await api.post('draftProduct', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+            await axios.post(`${backendUrl}/draftProduct`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data',Authorization : `Bearer ${token}` },
             });
-            Alert.alert('Success', 'Product created successfully');
+            Alert.alert('Success', 'Product created successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
             setProduct(initialProductState);
             setErrors({});
             setSelectedPairs([{ key: '', value: '0' }]);
             setTotalPercent(0);
             setFCCValue('');
         } catch (error) {
+            console.log(error?.response || error)
             Alert.alert('Error', 'Failed to create product: ' + (error.message || 'Unknown error'));
         } finally {
             setIsSubmitting(false);

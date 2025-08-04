@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
@@ -9,24 +11,27 @@ import {
     RefreshControl,
     TouchableOpacity,
 } from 'react-native';
-import api from '../../service/api';
-import AlertBox from '../../common/AlertBox';
-import { font } from '../../Settings/Theme';
-import { common } from '../../common/Common';
+import api from '../service/api';
+import AlertBox from '../common/AlertBox';
+import { font } from '../Settings/Theme';
+import { backendUrl, common } from '../common/Common';
+import moment from 'moment';
 
-const ProductDisplay = () => {
+const RequestMoveScreen = ({ route }) => {
+    const params = route.params;
     const [products, setProducts] = useState([]);
-    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 5 });
+    const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
     const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const [vendorNames, setVendorNames] = useState({});
     const [refreshing, setRefreshing] = useState(false);
     const [isError, setIsError] = useState({
         message: '',
         heading: '',
         isRight: false,
         rightButtonText: 'OK',
-        triggerFunction: () => { },
-        setShowAlert: () => { },
+        triggerFunction: () => {},
+        setShowAlert: () => {},
         showAlert: false,
     });
 
@@ -34,11 +39,30 @@ const ProductDisplay = () => {
         setIsError((prev) => ({ ...prev, showAlert: false }));
     };
 
+    const fetchVendorName = async (vendorId) => {
+        if (!vendorId || vendorNames[vendorId]) return;
+
+        try {
+            const res = await api.get(`vendor/${vendorId}`);
+            const username = res?.response?.username || 'Unknown Vendor';
+            setVendorNames((prev) => ({
+                ...prev,
+                [vendorId]: username,
+            }));
+        } catch (error) {
+            console.log('Error fetching vendor name:', error);
+            setVendorNames((prev) => ({
+                ...prev,
+                [vendorId]: 'N/A',
+            }));
+        }
+    };
+
     const fetchProducts = async (pageNum = 0) => {
         try {
             setIsLoading(true);
             const res = await api.get(
-                `draftProduct/view?page=${pageNum}&size=${pagination.pageSize}&searchTerm=`
+                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&requestInfo=${params?.requestInfo}`
             );
             const newProducts = res.response.content.map((item) => ({
                 ...item,
@@ -46,13 +70,21 @@ const ProductDisplay = () => {
             }));
             setProducts(newProducts);
             setRowCount(res.response?.totalElements || 0);
+
+            // Fetch vendor names for all unique vendorIds
+            const uniqueVendorIds = [
+                ...new Set(newProducts.map((p) => p.vendorId).filter(Boolean)),
+            ];
+            // Wait for all vendor name fetches to complete
+            await Promise.all(uniqueVendorIds.map((id) => fetchVendorName(id)));
         } catch (error) {
+            console.log('Error fetching products:', error?.response || error);
             setIsError({
                 message: 'Failed to fetch product details.',
                 heading: 'Error',
                 isRight: false,
                 rightButtonText: 'OK',
-                triggerFunction: () => { },
+                triggerFunction: () => {},
                 setShowAlert: closeAlert,
                 showAlert: true,
             });
@@ -81,9 +113,25 @@ const ProductDisplay = () => {
                 accessorKey: 'vendorId',
             },
             {
+                header: 'Vendor',
+                accessorFn: (row) => vendorNames?.[row?.vendorId] || 'N/A',
+            },
+            {
                 header: 'Product Name',
                 accessorFn: (row) =>
                     row.vendorProductName || row.articleName || 'N/A',
+            },
+            {
+                header: 'Product Code',
+                accessorFn: (row) =>
+                    row.vendorProductCode || row.articleCode || 'N/A',
+            },
+            {
+                header: 'Created Date',
+                accessorFn: (row) =>
+                    moment(row.createdDate).format('DD-MM-YYYY') ||
+                    row.createdDate ||
+                    'N/A',
             },
             {
                 header: 'GSM',
@@ -95,29 +143,35 @@ const ProductDisplay = () => {
                     row.composition || row.fabricContent?.value || 'N/A',
             },
         ],
-        []
+        [vendorNames] // Add vendorNames as a dependency
     );
 
-    const renderCard = ({ item, index }) => (
-        <View style={styles.cardContainer} key={index}>
-            {columns.map((col, colIndex) => (
-                <View key={colIndex} style={styles.cardRow}>
-                    <Text style={styles.cardLabel}>{col.header}:</Text>
-                    <Text style={styles.cardValue}>
-                        {col.accessorFn
-                            ? col.accessorFn(item, index)
-                            : item[col.accessorKey] || 'N/A'}
-                    </Text>
+    const renderCard = ({ item, index }) => {
+        return (
+            <View style={styles.cardContainer} key={index}>
+                {item.image ? (
+                    <Image
+                        source={{ uri: `${backendUrl}${item.image.replace('/api', '')}` }}
+                        style={styles.productImage}
+                    />
+                ) : (
+                    <View style={styles.productImage} />
+                )}
+                <View style={{}}>
+                    {columns.map((col, colIndex) => (
+                        <View key={colIndex} style={styles.cardRow}>
+                            {/* <Text style={styles.cardLabel}>{col.header}:</Text> */}
+                            <Text style={styles.cardValue}>
+                                {col.accessorFn
+                                    ? col.accessorFn(item, index)
+                                    : item[col.accessorKey] || 'N/A'}
+                            </Text>
+                        </View>
+                    ))}
                 </View>
-            ))}
-            {item.image && (
-                <Image
-                    source={{ uri: item.image }}
-                    style={styles.productImage}
-                />
-            )}
-        </View>
-    );
+            </View>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -183,12 +237,11 @@ const ProductDisplay = () => {
                     <TouchableOpacity
                         style={[
                             styles.paginationButton,
-                            (pagination.pageIndex + 1) * pagination.pageSize >=
-                            rowCount && styles.disabledButton,
+                            (pagination.pageIndex + 1) * pagination.pageSize >= rowCount &&
+                                styles.disabledButton,
                         ]}
                         disabled={
-                            (pagination.pageIndex + 1) * pagination.pageSize >=
-                            rowCount
+                            (pagination.pageIndex + 1) * pagination.pageSize >= rowCount
                         }
                         onPress={() =>
                             setPagination((prev) => ({
@@ -245,9 +298,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 6,
         elevation: 3,
+        flexDirection:'row',
+        justifyContent:'space-between',
+        alignItems:'center'
     },
     cardRow: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         justifyContent: 'space-between',
         marginBottom: 8,
     },
@@ -262,13 +318,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#333',
         flex: 1,
-        textAlign: 'right',
+        alignSelf:'flex-end'
     },
     productImage: {
         width: 150,
         height: 150,
         borderRadius: 4,
-        marginTop: 8,
+        marginBottom:10,
+        backgroundColor:'#ccc',
         alignSelf: 'center',
     },
     noDataText: {
@@ -320,4 +377,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ProductDisplay;
+export default RequestMoveScreen;
