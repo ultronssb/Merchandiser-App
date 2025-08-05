@@ -87,15 +87,16 @@ const HomeScreen = () => {
         <View style={styles.buttonGrid}>
 
           <HomeButton
-            icon="info-circle"  // Changed from "users" to "info-circle" for information
-            label="Request Information"
-            onPress={() => handleNavigation('RequestInformationScreen', { requestInfo: true })}
+            icon="file-text"  // Changed from "plus-square" to "file-text" for drafts
+            label="View Products"
+            onPress={() => handleNavigation('ViewProducts', { requestInfo: null })}
           />
           <HomeButton
-            icon="file-text"  // Changed from "plus-square" to "file-text" for drafts
-            label="Draft Product"
-            onPress={() => handleNavigation('DraftProductScreen', { requestInfo: null })}
+            icon="info-circle"  // Changed from "users" to "info-circle" for information
+            label="InProgress Products"
+            onPress={() => handleNavigation('InProgressProducts', { requestInfo: true })}
           />
+          
           <HomeButton
             icon="hourglass"  // Changed from "dropbox" to "hourglass" for pending/awaiting approval
             label="Unapproved Products"

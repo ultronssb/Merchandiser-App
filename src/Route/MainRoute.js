@@ -254,8 +254,8 @@ const MainStack = () => {
           <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
           <Stack.Screen name="VendorCreate" component={VendorCreate} />
           <Stack.Screen name="VendorProductCreate" component={MinimalProductCreate} />
-           <Stack.Screen name="RequestInformationScreen" component={RequestMoveScreen} />
-          <Stack.Screen name="DraftProductScreen" component={DraftProduct} />
+           <Stack.Screen name="InProgressProducts" component={RequestMoveScreen} />
+          <Stack.Screen name="ViewProducts" component={DraftProduct} />
           <Stack.Screen name="UnapprovedProducts" component={UnapprovedProduct} />
 
 
