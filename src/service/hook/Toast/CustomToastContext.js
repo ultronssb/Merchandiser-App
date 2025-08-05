@@ -102,9 +102,11 @@ export const ToastProvider = ({ children }) => {
                 >
                     <View style={styles.toastContent}>
                         {/* {toast.withIcon && (
-                            // Add icon rendering logic here if needed
-                            // Example: <Icon name="info" size={20} color={textColor} />
-                            <Text style={[styles.toastText, { color: textColor }]}>Icon</Text>
+                            <Image  
+                                source={require('../../assets/images/logo.png')}
+                                style={{ width: 20, height: 20 }}
+                                resizeMode="contain"
+                            />
                         )} */}
                         <Text style={[styles.toastText, { color: textColor }]}>
                             {toast?.message ? toast.message : 'Something went wrong'}

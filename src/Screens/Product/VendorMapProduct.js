@@ -25,7 +25,7 @@ import api from '../../service/api';
 import CustomToast from '../../service/hook/Toast/CustomToast';
 import { font } from '../../Settings/Theme';
 
-const MinimalProductCreate = ({route}) => {
+const MinimalProductCreate = ({ route }) => {
     const navigation = useNavigation();
     const initialProductState = {
         vendorId: '',
@@ -46,7 +46,7 @@ const MinimalProductCreate = ({route}) => {
             require: true,
             placeholder: 'Select Vendor',
             errorMessage: 'vendorId',
-            disable:!!route?.params?.productId
+            disable: !!route?.params?.productId
         },
         {
             id: '2',
@@ -96,6 +96,7 @@ const MinimalProductCreate = ({route}) => {
     const [lastChild, setLastChild] = useState([]);
     const [fCCValue, setFCCValue] = useState('');
     const [fabricValue, setFabricValue] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [fabricOptions, setFabricOptions] = useState([]);
 
     useEffect(() => {
@@ -242,34 +243,34 @@ const MinimalProductCreate = ({route}) => {
     //     }));
     // };
     const handleChange = async (value, key) => {
-    if (key === 'vendorUsername') {
-        try {
-            // Fetch vendor details using the selected vendorId
-            const vendorRes = await api.get(`vendor/${value}`);
+        if (key === 'vendorUsername') {
+            try {
+                // Fetch vendor details using the selected vendorId
+                const vendorRes = await api.get(`vendor/${value}`);
+                setProduct(prev => ({
+                    ...prev,
+                    vendorId: value, // Update vendorId
+                    vendorUsername: vendorRes?.response?.username || '' // Update vendorUsername
+                }));
+                setErrors(prev => ({
+                    ...prev,
+                    vendorId: '' // Clear error for vendorId
+                }));
+            } catch (error) {
+                console.log('Error fetching vendor details:', error);
+                CustomToast.show('Failed to load vendor details');
+            }
+        } else {
             setProduct(prev => ({
                 ...prev,
-                vendorId: value, // Update vendorId
-                vendorUsername: vendorRes?.response?.username || '' // Update vendorUsername
+                [key]: value
             }));
             setErrors(prev => ({
                 ...prev,
-                vendorId: '' // Clear error for vendorId
+                [key]: ''
             }));
-        } catch (error) {
-            console.log('Error fetching vendor details:', error);
-            CustomToast.show('Failed to load vendor details');
         }
-    } else {
-        setProduct(prev => ({
-            ...prev,
-            [key]: value
-        }));
-        setErrors(prev => ({
-            ...prev,
-            [key]: ''
-        }));
-    }
-};
+    };
 
     const handleFabricSelectChange = (index, selectedValue) => {
         const newPairs = [...selectedPairs];
@@ -518,8 +519,8 @@ const MinimalProductCreate = ({route}) => {
         const tempErrors = {};
         fieldConfig.forEach(field => {
             if (field.require) {
-                const value = field.key === 'fabricContent' ? product[field.key].value : 
-                              field.key === 'vendorUsername' ? product['vendorId'] : product[field.key];
+                const value = field.key === 'fabricContent' ? product[field.key].value :
+                    field.key === 'vendorUsername' ? product['vendorId'] : product[field.key];
                 if (!value) {
                     tempErrors[field.errorMessage] = `${field.name} is required`;
                 }
@@ -539,6 +540,8 @@ const MinimalProductCreate = ({route}) => {
         }
         const token = storage.getString('token');
         setIsSubmitting(true);
+        setLoading(true);
+
         const formData = new FormData();
         let updatedProduct = {
             ...product,
@@ -579,6 +582,7 @@ const MinimalProductCreate = ({route}) => {
             Alert.alert('Error', 'Failed to create product: ' + (error.message || 'Unknown error'));
         } finally {
             setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
@@ -624,83 +628,83 @@ const MinimalProductCreate = ({route}) => {
     );
 
     const renderField = (field) => {
-    const value = field.key === 'fabricContent' ? product[field.key].value : 
-                  field.key === 'vendorUsername' ? product[field.key] : product[field.key] || '';
-    if (field.fieldType === 'textField') {
-        return (
-            <View key={field.id} style={styles.formGroup}>
-                <Text style={styles.label}>
-                    {field.name}
-                    {field.require && <Text style={styles.errorText}> *</Text>}
-                </Text>
-                <TextInput
-                    style={[
-                        styles.input,
-                        errors[field.errorMessage] && { borderColor: 'red' },
-                        field.disable && { backgroundColor: '#e0e0e0' } // Disabled background color
-                    ]}
-                    value={String(value)}
-                    onChangeText={text => handleChange(text, field.key)}
-                    placeholder={field.placeholder}
-                    keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                    placeholderTextColor="#999"
-                    editable={!field.disable}
-                />
-                {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
-            </View>
-        );
-    } else if (field.fieldType === 'vendorPicker') {
-        return (
-            <View key={field.id} style={styles.formGroup}>
-                <Text style={styles.label}>
-                    {field.name}
-                    {field.require && <Text style={styles.errorText}> *</Text>}
-                </Text>
-                <VendorPicker
-                    value={product.vendorId} // Pass vendorId as value
-                    onValueChange={(val) => handleChange(val, field.key)} // Trigger handleChange with vendorId
-                    placeholder={field.placeholder}
-                />
-                {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
-            </View>
-        );
-    // const renderField = (field) => {
-    //     const value = field.key === 'fabricContent' ? product[field.key].value : 
-    //                   field.key === 'vendorUsername' ? product[field.key] : product[field.key] || '';
-    //     if (field.fieldType === 'textField') {
-    //         return (
-    //             <View key={field.id} style={styles.formGroup}>
-    //                 <Text style={styles.label}>
-    //                     {field.name}
-    //                     {field.require && <Text style={styles.errorText}> *</Text>}
-    //                 </Text>
-    //                 <TextInput
-    //                     style={[styles.input, errors[field.errorMessage] && { borderColor: 'red' },field.disable && { backgroundColor: '#e0e0e0' }]}
-    //                     value={String(value)}
-    //                     onChangeText={text => handleChange(text, field.key)}
-    //                     placeholder={field.placeholder}
-    //                     keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-    //                     placeholderTextColor="#999"
-    //                     editable={!field.disable}
-    //                 />
-    //                 {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
-    //             </View>
-    //         );
-    //     } else if (field.fieldType === 'vendorPicker') {
-    //         return (
-    //             <View key={field.id} style={styles.formGroup}>
-    //                 <Text style={styles.label}>
-    //                     {field.name}
-    //                     {field.require && <Text style={styles.errorText}> *</Text>}
-    //                 </Text>
-    //                 <VendorPicker
-    //                     value={value}
-    //                     onValueChange={val => handleChange(val, field.key)}
-    //                     placeholder={field.placeholder}
-    //                 />
-    //                 {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
-    //             </View>
-    //         );
+        const value = field.key === 'fabricContent' ? product[field.key].value :
+            field.key === 'vendorUsername' ? product[field.key] : product[field.key] || '';
+        if (field.fieldType === 'textField') {
+            return (
+                <View key={field.id} style={styles.formGroup}>
+                    <Text style={styles.label}>
+                        {field.name}
+                        {field.require && <Text style={styles.errorText}> *</Text>}
+                    </Text>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            errors[field.errorMessage] && { borderColor: 'red' },
+                            field.disable && { backgroundColor: '#e0e0e0' } // Disabled background color
+                        ]}
+                        value={String(value)}
+                        onChangeText={text => handleChange(text, field.key)}
+                        placeholder={field.placeholder}
+                        keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                        placeholderTextColor="#999"
+                        editable={!field.disable}
+                    />
+                    {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
+                </View>
+            );
+        } else if (field.fieldType === 'vendorPicker') {
+            return (
+                <View key={field.id} style={styles.formGroup}>
+                    <Text style={styles.label}>
+                        {field.name}
+                        {field.require && <Text style={styles.errorText}> *</Text>}
+                    </Text>
+                    <VendorPicker
+                        value={product.vendorId} // Pass vendorId as value
+                        onValueChange={(val) => handleChange(val, field.key)} // Trigger handleChange with vendorId
+                        placeholder={field.placeholder}
+                    />
+                    {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
+                </View>
+            );
+            // const renderField = (field) => {
+            //     const value = field.key === 'fabricContent' ? product[field.key].value : 
+            //                   field.key === 'vendorUsername' ? product[field.key] : product[field.key] || '';
+            //     if (field.fieldType === 'textField') {
+            //         return (
+            //             <View key={field.id} style={styles.formGroup}>
+            //                 <Text style={styles.label}>
+            //                     {field.name}
+            //                     {field.require && <Text style={styles.errorText}> *</Text>}
+            //                 </Text>
+            //                 <TextInput
+            //                     style={[styles.input, errors[field.errorMessage] && { borderColor: 'red' },field.disable && { backgroundColor: '#e0e0e0' }]}
+            //                     value={String(value)}
+            //                     onChangeText={text => handleChange(text, field.key)}
+            //                     placeholder={field.placeholder}
+            //                     keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+            //                     placeholderTextColor="#999"
+            //                     editable={!field.disable}
+            //                 />
+            //                 {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
+            //             </View>
+            //         );
+            //     } else if (field.fieldType === 'vendorPicker') {
+            //         return (
+            //             <View key={field.id} style={styles.formGroup}>
+            //                 <Text style={styles.label}>
+            //                     {field.name}
+            //                     {field.require && <Text style={styles.errorText}> *</Text>}
+            //                 </Text>
+            //                 <VendorPicker
+            //                     value={value}
+            //                     onValueChange={val => handleChange(val, field.key)}
+            //                     placeholder={field.placeholder}
+            //                 />
+            //                 {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
+            //             </View>
+            //         );
         } else if (field.fieldType === 'compositionField') {
             return (
                 <View key={field.id} style={styles.formGroup}>
@@ -769,7 +773,7 @@ const MinimalProductCreate = ({route}) => {
                             {value ? 'Change Image' : field.placeholder}
                         </Text>
                     </TouchableOpacity>
-                    {value && <Image source={{ uri: uri}} style={styles.image} />}
+                    {value && <Image source={{ uri: uri }} style={styles.image} />}
                     {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
                 </View>
             );
@@ -777,9 +781,11 @@ const MinimalProductCreate = ({route}) => {
         return null;
     };
 
-    return (
+    return (<>
         <ScrollView style={styles.container}>
             {fieldConfig.map(field => renderField(field))}
+
+
             <View style={styles.buttonRow}>
                 <TouchableRipple
                     rippleColor={'rgba(0, 0, 0, .32)'}
@@ -793,6 +799,12 @@ const MinimalProductCreate = ({route}) => {
                 </TouchableRipple>
             </View>
         </ScrollView>
+        {loading &&
+            <View style={styles.loaderContainer}>
+                <ActivityIndicator size={'large'} color={common.PRIMARY_COLOR} />
+            </View>
+        }
+    </>
     );
 };
 
@@ -900,7 +912,7 @@ const MinimalProductCreate = ({route}) => {
 //         getFabricValues();
 //         setFCCValue(product?.fabricContent?.value || '');
 //         setTotalPercent(product?.totalProductPercent || 0);
-    
+
 //     }, []);
 
 //     useEffect(() => {
@@ -1540,6 +1552,15 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontFamily: font.regular,
         color: '#333'
+    }, loaderContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)'
     },
     pickerButton: {
         borderWidth: 1,
@@ -1592,7 +1613,7 @@ const styles = StyleSheet.create({
         marginBottom: 5
     },
     imageButtonText: { fontSize: 16, color: '#333', fontFamily: font.semiBold },
-    image: { width: 200, height: 200, marginBottom: 5, alignSelf: 'center',backgroundColor:'#ccc' },
+    image: { width: 200, height: 200, marginBottom: 5, alignSelf: 'center', backgroundColor: '#ccc' },
     submitButton: {
         backgroundColor: '#007bff',
         padding: 12,
