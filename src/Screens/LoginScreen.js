@@ -68,7 +68,7 @@ const LoginScreen = () => {
     Keyboard.dismiss();
     const loginRequestBody = { emailId: email, password: password };
     try {
-      const response = await api.post('user/login', {
+      const response = await api.post('merchandiser/login', {
         emailId: email.toLowerCase(),
         password: password,
       });

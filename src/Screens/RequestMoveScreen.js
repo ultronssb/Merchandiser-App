@@ -104,7 +104,8 @@ const RequestMoveScreen = ({ route }) => {
     const onRefresh = () => {
         setRefreshing(true);
         setProducts([]);
-        setPagination({ pageIndex: 0, pageSize: 5 });
+        setPagination({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize });
+
         fetchProducts(0);
     };
 

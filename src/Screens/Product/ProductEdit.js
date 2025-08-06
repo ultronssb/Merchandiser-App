@@ -4,13 +4,13 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    Modal,
     ScrollView,
     StyleSheet,
     ActivityIndicator,
     Alert,
     Image,
-    FlatList
+    FlatList,
+    Modal
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -25,8 +25,6 @@ import VendorPicker from '../../common/VendorPicker';
 import PickerSelect from '../../common/PickerSelect';
 import PickerMultiSelect from '../../common/PickerMultiSelect';
 import ProductVariant from './ProductVariant';
-import ProductCategorys from './CategoryType';
-
 
 export const ProductContext = React.createContext();
 
@@ -34,7 +32,6 @@ const ProductEdit = ({ route }) => {
     const navigation = useNavigation();
     const mode = route?.params?.statusProduct || 'new';
     const productId = route?.params?.productId;
-
 
     const initialProductState = {
         vendorId: '',
@@ -53,6 +50,19 @@ const ProductEdit = ({ route }) => {
         coneWeight: '',
         price: '',
         totalProductPercent: 0,
+        productCategories: [],
+        productCategoriesList: []
+    };
+
+    const initialCategoryState = {
+        key: '',
+        value: {},
+        heirarchyLabel: '',
+        options: [],
+        openModal: false,
+        count: 2,
+        multiSelect: false,
+        parentCategory: null
     };
 
     const [product, setProduct] = useState(initialProductState);
@@ -62,17 +72,19 @@ const ProductEdit = ({ route }) => {
     const [fabricTypes, setFabricTypes] = useState([]);
     const [variantOptions, setVariantOptions] = useState([]);
     const [fabricContent, setFabricContent] = useState({});
-    const [selectedPairs, setSelectedPairs] = useState([{ key: '', value: '0' }]);
+    const [selectedFabricPairs, setSelectedFabricPairs] = useState([{ key: '', value: '0' }]);
     const [totalPercent, setTotalPercent] = useState(0);
     const [lastChild, setLastChild] = useState([]);
     const [fCCValue, setFCCValue] = useState('');
     const [fabricValue, setFabricValue] = useState([]);
     const [fabricOptions, setFabricOptions] = useState([]);
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
-    const [showCompositionModal, setShowCompositionModal] = useState(false);
+    const [inputError, setInputError] = useState('');
     const [categories, setCategories] = useState([]);
     const [categoryName, setCategoryName] = useState([]);
-    const [categoryPairs, setCategoryPairs] = useState([{ key: '', value: {} }]);
+    const [categoryPairs, setCategoryPairs] = useState([{ ...initialCategoryState }]);
+    const [multiSelect, setMultiselect] = useState({});
+    const [selectedValues, setSelectedValues] = useState({});
+    const [modalIndex, setModalIndex] = useState(null);
 
     const uomOptions = [
         { label: 'Kg', value: 'Kg' },
@@ -80,81 +92,80 @@ const ProductEdit = ({ route }) => {
         { label: 'Yard', value: 'Yard' }
     ];
 
-
     const fieldConfig = [
         {
             id: '1', name: 'Vendor', fieldType: 'vendorPicker', key: 'vendorUsername', require: true,
             placeholder: 'Select Vendor', errorMessage: 'vendorId', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '2', name: 'Vendor Product ID', fieldType: 'textField', type: 'text', key: 'vendorProductId', require: true,
             placeholder: 'Enter Vendor Product ID', errorMessage: 'vendorProductId', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '3', name: 'Vendor Product Name', fieldType: 'textField', type: 'text', key: 'vendorProductName', require: true,
             placeholder: 'Enter product name', errorMessage: 'vendorProductName', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '4', name: 'GSM', fieldType: 'textField', type: 'number', key: 'gsm', require: false,
             placeholder: 'Enter GSM', errorMessage: 'gsm', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '5', name: 'UOM', fieldType: 'radio', key: 'uom', require: true,
             placeholder: 'Select UOM', items: uomOptions, errorMessage: 'uom', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '6', name: 'Image', fieldType: 'imageField', key: 'imageFile', require: true,
             placeholder: 'Upload or Select Image', errorMessage: 'imageFile', editableWhen: ['new'],
-            viewableIn: ["view", 'in_progress', 'unapproved']
+            viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
             id: '7', name: 'Width', fieldType: 'textField', type: 'number', key: 'width', require: false,
             placeholder: 'Enter Width', errorMessage: 'width', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '8', name: 'Composition', fieldType: 'compositionField', key: 'fabricContent', require: false,
             placeholder: 'Select or Add Fabric Combination', errorMessage: 'fabricContent', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            viewableIn: ['in_progress', 'unapproved']
         },
         {
-            id: '9', name: 'Fabric Type', fieldType: 'categoryField', key: 'fabricType', require: false,
-            placeholder: 'Select Fabric Type', errorMessage: 'fabricType', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            id: '9', name: 'Fabric Type', fieldType: 'categoryField', key: 'productCategories', require: false,
+            placeholder: 'Select Fabric Type', errorMessage: 'productCategories', editableWhen: ['in_progress'],
+            viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '10', name: 'Variants', fieldType: 'variantField', key: 'variants', require: false,
             placeholder: 'Select Variants', errorMessage: 'variants', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '11', name: 'Sample Available', fieldType: 'checkbox', key: 'sampleAvailable', require: false,
-            errorMessage: 'sampleAvailable', editableWhen: ['in_progress'], viewableIn: ['unapproved']
+            errorMessage: 'sampleAvailable', editableWhen: ['in_progress'], viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '12', name: 'Swatch Available', fieldType: 'checkbox', key: 'swatchAvailable', require: false,
-            errorMessage: 'swatchAvailable', editableWhen: ['in_progress'], viewableIn: ['unapproved']
+            errorMessage: 'swatchAvailable', editableWhen: ['in_progress'], viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '13', name: 'Cone Weight', fieldType: 'textField', type: 'number', key: 'coneWeight', require: false,
             placeholder: 'Enter Cone Weight', errorMessage: 'coneWeight', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '14', name: 'Price', fieldType: 'textField', type: 'number', key: 'price', require: false,
             placeholder: 'Enter Price', errorMessage: 'price', editableWhen: ['in_progress'],
-            viewableIn: ['unapproved']
+            viewableIn: ['in_progress', 'unapproved']
         }
     ];
 
     useEffect(() => {
         fetchFabricTypes();
-        // fetchVariants();
+        fetchVariants();
         fetchVariant();
         getFabricValues();
         fetchCategories();
@@ -164,13 +175,12 @@ const ProductEdit = ({ route }) => {
         }
     }, [productId]);
 
-
     const fetchFabricTypes = async () => {
         try {
             const res = await api.get('fabric?status=ACTIVE');
             setFabricTypes(res.response.map(item => ({ label: item.name, value: item.id })));
         } catch (error) {
-            console.log('Error fetching fabric types:', error);
+            console.log('Error fetching fabric types:', error?.response || error);
         }
     };
 
@@ -179,7 +189,7 @@ const ProductEdit = ({ route }) => {
             const res = await api.get('variant');
             setVariantOptions(res.response.map(item => ({ label: item.value, value: item.id })));
         } catch (error) {
-            console.log('Error fetching variants:', error);
+            console.log('Error fetching variants:', error?.response || error);
         }
     };
 
@@ -189,8 +199,12 @@ const ProductEdit = ({ route }) => {
             const categories = res.response;
             const category = categories.find(cat => cat.name === 'Fabric Content');
             setFabricContent(category);
+            if (category?.child) {
+                const emptyNodes = findEmptyChildNodes(category);
+                setLastChild(emptyNodes);
+            }
         } catch (error) {
-            console.log('Error fetching variants:', error);
+            console.log('Error fetching variants:', error?.response || error);
         }
     };
 
@@ -202,9 +216,9 @@ const ProductEdit = ({ route }) => {
                 label: item.value,
                 value: item.value
             })) || [];
-            setFabricOptions(options);
+            setFabricOptions([{ label: "Select Combination", value: "" }, ...options]);
         } catch (error) {
-            console.log("Error fetching fabric values: ", error);
+            console.log("Error fetching fabric values: ", error?.response || error);
         }
     };
 
@@ -215,11 +229,121 @@ const ProductEdit = ({ route }) => {
                 cat => cat.name?.toLowerCase() !== 'fabric content'
             );
             const categoryNames = categories.map(res => res.name);
+            const mandatoryCategories = categories?.filter(cat => cat.isMandatory);
+
+            const getLastChildCategories = (selectedKey, childCategories = null) => {
+                const childCategory = childCategories
+                    ? childCategories
+                    : categories.find(cat => cat.name === selectedKey)?.child || [];
+                return childCategory.reduce((acc, category) => {
+                    if (!category.child || category.child.length === 0) {
+                        acc.push({
+                            ...category,
+                            value: category.id,
+                            label: category.name,
+                        });
+                    } else {
+                        acc.push(...getLastChildCategories(null, category.child));
+                    }
+                    return acc;
+                }, []);
+            };
+
+            categoryNames.forEach(item => {
+                setMultiselect(prev => ({
+                    ...prev,
+                    [item]: getLastChildCategories(item),
+                }));
+            });
             setCategoryName(categoryNames);
             setCategories(categories);
+            setCategorysAndCategoryPairs(mandatoryCategories);
         } catch (error) {
-            console.log('Error fetching categories:', error);
+            console.log('Error fetching categories:', error?.response || error);
         }
+    };
+
+    const setCategorysAndCategoryPairs = (mandatoryCategories = []) => {
+        const productCategoriesList = product.productCategoriesList || [];
+        let formattedCategories = [];
+        const uniqueCategoryKeys = new Set();
+
+        if (
+            product?.productCategories?.length > 0 ||
+            _.size(productCategoriesList) > 0
+        ) {
+            if (product?.productCategories?.length > 0) {
+                formattedCategories = product.productCategories.map(category => ({
+                    ...initialCategoryState,
+                    options: category?.options || [],
+                    key: category?.key,
+                    isMandatory: category?.isMandatory || false,
+                    heirarchyLabel: category?.heirarchyLabel || '',
+                    value: category?.value || {},
+                    multiSelect: category?.multiSelect || false,
+                    count: category?.heirarchyLabel
+                        ? category.heirarchyLabel.split(' / ').length + 1
+                        : 2,
+                    parentCategory: null,
+                }));
+            }
+
+            _.forEach(productCategoriesList, prod => {
+                if (!uniqueCategoryKeys.has(prod.productGroupName)) {
+                    uniqueCategoryKeys.add(prod.productGroupName);
+                    formattedCategories.push({
+                        ...initialCategoryState,
+                        heirarchyLabel: prod.name,
+                        key: prod.productGroupName,
+                        multiSelect: prod.multiSelect,
+                        isMandatory: mandatoryCategories.find(
+                            cat => cat.name === prod.productGroupName
+                        )?.isMandatory || false,
+                        options: getParentChild(prod.productGroupName) || [],
+                    });
+                }
+            });
+        }
+
+        if (formattedCategories.length > 0) {
+            formattedCategories.sort(
+                (a, b) => (b.isMandatory === true) - (a.isMandatory === true)
+            );
+            setCategoryPairs(formattedCategories);
+        } else if (
+            mandatoryCategories.length > 0 &&
+            productCategoriesList.length === 0
+        ) {
+            formattedCategories = mandatoryCategories.map(category => ({
+                ...initialCategoryState,
+                options: category?.child || [],
+                key: category.name,
+                isMandatory: true,
+                multiSelect: category.multiSelect,
+            }));
+            setCategoryPairs(formattedCategories);
+            setProduct(prev => ({
+                ...prev,
+                productCategories: formattedCategories.filter(cat => !cat.multiSelect),
+            }));
+        }
+
+        const updatedSelectedValues = {};
+        const uniqueCategoryKeysList = [
+            ...new Set(
+                product.productCategoriesList?.map(
+                    category => category?.productGroupName
+                )
+            ),
+        ];
+        uniqueCategoryKeysList.forEach(category => {
+            const selectedForCategory =
+                product.productCategoriesList
+                    ?.filter(item => item.productGroupName === category)
+                    .map(item => item.id) || [];
+            updatedSelectedValues[category] = selectedForCategory;
+        });
+        setSelectedValues(updatedSelectedValues);
     };
 
     const fetchProduct = async (id) => {
@@ -227,6 +351,11 @@ const ProductEdit = ({ route }) => {
             const res = await api.get(`draftProduct/get/${id}`);
             if (res?.response) {
                 const vendorRes = await api.get(`vendor/${res.response.vendorId}`);
+                const fabricContent = res.response.fabricContent || { composition: {}, value: '' };
+                const compositionPairs = Object.entries(fabricContent.composition || {}).map(([key, value]) => ({
+                    key,
+                    value: value.toString()
+                }));
                 setProduct({
                     ...res.response,
                     status: res.response.status || mode,
@@ -245,18 +374,22 @@ const ProductEdit = ({ route }) => {
                     swatchAvailable: res.response.swatchAvailable || false,
                     coneWeight: res.response.otherInformation?.coneWeight || '',
                     price: res.response.price || '',
-                    totalProductPercent: Object.values(res.response.fabricContent?.composition || {}).reduce((acc, val) => acc + val, 0) || 0,
+                    totalProductPercent: Object.values(fabricContent.composition || {}).reduce((acc, val) => acc + val, 0) || 0,
+                    fabricContent,
+                    productCategories: res.response.productCategories || [],
+                    productCategoriesList: res.response.productCategoriesList || []
                 });
-                setFCCValue(res.response.fabricContent?.value || '');
-                setTotalPercent(Object.values(res.response.fabricContent?.composition || {}).reduce((acc, val) => acc + val, 0) || 0);
+                setFCCValue(fabricContent.value || '');
+                setTotalPercent(Object.values(fabricContent.composition || {}).reduce((acc, val) => acc + val, 0) || 0);
+                setSelectedFabricPairs(compositionPairs.length > 0 ? compositionPairs : [{ key: '', value: '0' }]);
             }
         } catch (error) {
-            console.log('Error fetching product:', error);
+            console.log('Error fetching product:', error?.response || error);
         }
     };
 
-
     const handleChange = async (value, key) => {
+        console.log(key, value);
         if (key === 'vendorUsername') {
             try {
                 const vendorRes = await api.get(`vendor/${value}`);
@@ -267,9 +400,15 @@ const ProductEdit = ({ route }) => {
                 }));
                 setErrors(prev => ({ ...prev, vendorId: '' }));
             } catch (error) {
-                console.log('Error fetching vendor details:', error);
+                console.log('Error fetching vendor details:', error?.response || error);
             }
         } else {
+            if (key === 'width') {
+                setProduct(prev => ({
+                    ...prev,
+                    metrics: { ...prev.metrics, width: value }
+                }));
+            }
             setProduct(prev => ({
                 ...prev,
                 [key]: value
@@ -280,7 +419,6 @@ const ProductEdit = ({ route }) => {
             }));
         }
     };
-
 
     const handleImagePick = async () => {
         const res = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
@@ -293,7 +431,6 @@ const ProductEdit = ({ route }) => {
             }
         }
     };
-
 
     const findEmptyChildNodes = (node) => {
         const result = [];
@@ -309,20 +446,52 @@ const ProductEdit = ({ route }) => {
         return result;
     };
 
-    const getAvailableKeys = (currentIndex) => {
-        const selectedKeys = selectedPairs.map(pair => pair.key);
-        return Object.keys(
-            lastChild.reduce((map, item) => {
-                map[item.categoryId] = item.name;
-                return map;
-            }, {})
-        ).filter(
-            key => !selectedKeys.includes(key) || selectedPairs[currentIndex].key === key
+    const keyToNameMap = lastChild.reduce((map, item) => {
+        map[item.categoryId] = item.name;
+        return map;
+    }, {});
+
+    const getAvailableFabricKeys = (currentIndex) => {
+        const selectedKeys = selectedFabricPairs.map(pair => pair.key);
+        return Object.keys(keyToNameMap).filter(
+            key => !selectedKeys.includes(key) || selectedFabricPairs[currentIndex].key === key
         );
+    };
+    const handleSubmit = async () => {
+
+        const token = storage.getString('token');
+        setIsSubmitting(true);
+        setLoading(true);
+
+        const formData = new FormData();
+        let updatedProduct = {
+            ...product,
+            vendorId: product.vendorId
+        };
+
+        formData.append('product', JSON.stringify(updatedProduct));
+
+
+        try {
+            await axios.post(`${backendUrl}/draftProduct`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
+            });
+            Alert.alert('Success', 'Product created successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+            setProduct(initialProductState);
+            setErrors({});
+            setTotalPercent(0);
+            setFCCValue('');
+        } catch (error) {
+            console.log(error?.response || error);
+            Alert.alert('Error', 'Failed to create product: ' + (error.message || 'Unknown error'));
+        } finally {
+            setIsSubmitting(false);
+            setLoading(false);
+        }
     };
 
     const handleFabricSelectChange = (index, selectedValue) => {
-        const newPairs = [...selectedPairs];
+        const newPairs = [...selectedFabricPairs];
         const oldKey = newPairs[index].key;
         const oldValue = parseInt(newPairs[index].value, 10) || 0;
 
@@ -332,7 +501,7 @@ const ProductEdit = ({ route }) => {
         const newValue = parseInt(newPairs[index].value, 10) || 0;
         const updatedTotal = totalPercent - oldValue + newValue;
 
-        setSelectedPairs(newPairs);
+        setSelectedFabricPairs(newPairs);
         setTotalPercent(updatedTotal);
 
         setProduct(prev => {
@@ -343,10 +512,14 @@ const ProductEdit = ({ route }) => {
             if (selectedValue) {
                 updatedComposition[selectedValue] = newValue;
             }
+
             return {
                 ...prev,
                 totalProductPercent: updatedTotal,
-                fabricContent: { ...prev.fabricContent, composition: updatedComposition }
+                fabricContent: {
+                    ...prev.fabricContent,
+                    composition: updatedComposition
+                }
             };
         });
 
@@ -358,28 +531,38 @@ const ProductEdit = ({ route }) => {
         }, {});
 
         if (Object.keys(pairsObject).length > 0) {
-            generateFabricContentCode(pairsObject);
+            fabricContentCode(pairsObject);
         } else {
             setFCCValue('');
             setProduct(prev => ({
                 ...prev,
-                fabricContent: { ...prev.fabricContent, value: '' }
+                fabricContent: {
+                    ...prev.fabricContent,
+                    value: ''
+                }
             }));
         }
+
+        setErrors(prev => ({
+            ...prev,
+            fabricContent: updatedTotal > 100 ? 'Total fabric content cannot exceed 100%' : ''
+        }));
     };
 
     const handleFabricValueChange = (index, value) => {
-        const newPairs = [...selectedPairs];
+        const newPairs = [...selectedFabricPairs];
         const key = newPairs[index].key;
         const previousValue = parseInt(newPairs[index].value, 10) || 0;
 
-        if (value !== '' && isNaN(parseInt(value, 10))) return;
+        if (value !== '' && isNaN(parseInt(value, 10))) {
+            return;
+        }
 
         newPairs[index].value = value;
         const newValue = parseInt(value, 10) || 0;
         const updatedTotal = totalPercent - previousValue + newValue;
 
-        setSelectedPairs(newPairs);
+        setSelectedFabricPairs(newPairs);
         setTotalPercent(updatedTotal);
 
         if (key) {
@@ -388,7 +571,10 @@ const ProductEdit = ({ route }) => {
                 totalProductPercent: updatedTotal,
                 fabricContent: {
                     ...prev.fabricContent,
-                    composition: { ...prev.fabricContent.composition, [key]: newValue }
+                    composition: {
+                        ...prev.fabricContent.composition,
+                        [key]: newValue
+                    }
                 }
             }));
 
@@ -398,14 +584,20 @@ const ProductEdit = ({ route }) => {
                 }
                 return acc;
             }, {});
-            generateFabricContentCode(pairsObject);
+
+            fabricContentCode(pairsObject);
         }
+
+        setErrors(prev => ({
+            ...prev,
+            fabricContent: updatedTotal > 100 ? 'Total fabric content cannot exceed 100%' : ''
+        }));
     };
 
-    const generateFabricContentCode = async (pairs) => {
+    const fabricContentCode = async (newPairs) => {
         try {
             const results = await Promise.all(
-                Object.entries(pairs).map(async ([key, value]) => {
+                Object.entries(newPairs).map(async ([key, value]) => {
                     const res = await api.get(`product-category/category/${key}`);
                     const name = res.response.name;
                     const fcc = name.substring(0, 3).toUpperCase();
@@ -422,25 +614,33 @@ const ProductEdit = ({ route }) => {
             }));
             setFCCValue(formattedFCC);
         } catch (error) {
-            console.log("Error generating fabric content code: ", error);
+            console.log("Error generating fabric content code: ", error?.response || error);
         }
     };
 
-    const addNewPair = () => {
+    const addNewFabricPair = () => {
         if (totalPercent < 100) {
-            setSelectedPairs([...selectedPairs, { key: '', value: '0' }]);
-            setErrors(prev => ({ ...prev, fabricContent: '' }));
+            setSelectedFabricPairs([...selectedFabricPairs, { key: '', value: '0' }]);
+            setErrors(prev => ({
+                ...prev,
+                fabricContent: ''
+            }));
+        } else {
+            setErrors(prev => ({
+                ...prev,
+                fabricContent: 'Total fabric content cannot exceed 100%'
+            }));
         }
     };
 
-    const removePair = (index) => {
-        const newPairs = [...selectedPairs];
+    const removeFabricPair = (index) => {
+        const newPairs = [...selectedFabricPairs];
         const removedKey = newPairs[index].key;
         const removedValue = parseInt(newPairs[index].value, 10) || 0;
         const updatedTotal = totalPercent - removedValue;
 
         newPairs.splice(index, 1);
-        setSelectedPairs(newPairs);
+        setSelectedFabricPairs(newPairs);
         setTotalPercent(updatedTotal);
 
         setProduct(prev => {
@@ -448,7 +648,10 @@ const ProductEdit = ({ route }) => {
             return {
                 ...prev,
                 totalProductPercent: updatedTotal,
-                fabricContent: { ...prev.fabricContent, composition: newComposition }
+                fabricContent: {
+                    ...prev.fabricContent,
+                    composition: newComposition
+                }
             };
         });
 
@@ -460,19 +663,42 @@ const ProductEdit = ({ route }) => {
         }, {});
 
         if (Object.keys(pairsObject).length > 0) {
-            generateFabricContentCode(pairsObject);
+            fabricContentCode(pairsObject);
         } else {
             setFCCValue('');
             setProduct(prev => ({
                 ...prev,
-                fabricContent: { ...prev.fabricContent, value: '' }
+                fabricContent: {
+                    ...prev.fabricContent,
+                    value: ''
+                }
             }));
         }
+
+        setErrors(prev => ({
+            ...prev,
+            fabricContent: updatedTotal > 100 ? 'Total fabric content cannot exceed 100%' : ''
+        }));
     };
 
     const handleFabricChange = (selectedValue) => {
         const selectedFabric = fabricValue.find(fabric => fabric.value === selectedValue);
-        if (!selectedFabric) return;
+        if (!selectedFabric) {
+            setSelectedFabricPairs([{ key: '', value: '0' }]);
+            setTotalPercent(0);
+            setFCCValue('');
+            setProduct(prev => ({
+                ...prev,
+                totalProductPercent: 0,
+                fabricContent: {
+                    ...prev.fabricContent,
+                    composition: {},
+                    value: ''
+                }
+            }));
+            setErrors(prev => ({ ...prev, fabricContent: '' }));
+            return;
+        }
 
         const compositionArray = Object.entries(selectedFabric.composition);
         const pairValues = selectedFabric.value.split(' ').map(item => {
@@ -496,27 +722,28 @@ const ProductEdit = ({ route }) => {
 
         const totalSum = sortedPairs.reduce((sum, [_, value]) => sum + parseInt(value, 10) || 0, 0);
 
-        setSelectedPairs(newPairs);
+        setSelectedFabricPairs(newPairs);
         setTotalPercent(totalSum);
-
-        const pairsObject = sortedPairs.reduce((acc, [key, value]) => {
-            acc[key] = parseInt(value, 10);
-            return acc;
-        }, {});
+        setFCCValue(selectedFabric.value);
 
         setProduct(prev => ({
             ...prev,
             totalProductPercent: totalSum,
             fabricContent: {
                 ...prev.fabricContent,
-                composition: pairsObject,
+                composition: sortedPairs.reduce((acc, [key, value]) => {
+                    acc[key] = parseInt(value, 10);
+                    return acc;
+                }, {}),
                 value: selectedFabric.value
             }
         }));
 
-        setFCCValue(selectedFabric.value);
+        setErrors(prev => ({
+            ...prev,
+            fabricContent: totalSum > 100 ? 'Total fabric content cannot exceed 100%' : ''
+        }));
     };
-
 
     const handleVariantChange = (variants) => {
         setProduct(prev => ({
@@ -525,132 +752,177 @@ const ProductEdit = ({ route }) => {
         }));
     };
 
+    const handleCategorySelectChange = (index, selectedKey) => {
+        const newPairs = [...categoryPairs];
+        newPairs[index] = {
+            ...initialCategoryState,
+            key: selectedKey,
+            options: getParentChild(selectedKey),
+        };
+        const childCategory = categories.find(cat => cat.name === selectedKey);
+        if (!childCategory?.multiSelect) {
+            setProduct(prev => ({ ...prev, productCategories: newPairs }));
+        }
+        setCategoryPairs(newPairs);
+        setInputError('');
+    };
 
-    const handleFabricTypeChange = (fabricType) => {
+    const openCategoryModal = (index, value) => {
+        setModalIndex(value ? index : null);
+    };
+
+    const addNewCategoryPair = () => {
+        setCategoryPairs([...categoryPairs, { ...initialCategoryState }]);
+    };
+
+    const removeCategoryPair = (index, catname) => {
+        const newPairs = [...categoryPairs];
+        newPairs.splice(index, 1);
+        setCategoryPairs(newPairs);
+        if (catname) {
+            setSelectedValues(prevState => {
+                const newState = { ...prevState };
+                delete newState[catname];
+                return newState;
+            });
+            const list = product?.productCategoriesList?.filter(
+                item => item.productGroupName !== catname
+            );
+            setProduct(prevProduct => ({
+                ...prevProduct,
+                productCategoriesList: list,
+            }));
+        }
         setProduct(prev => ({
             ...prev,
-            fabricType: fabricType
+            productCategories: (newPairs || []).filter(cat => !cat.multiSelect),
         }));
-        setShowCategoryModal(false);
     };
 
+    const selectCategory = (index, cat) => {
+        const newPairs = [...categoryPairs];
+        const label = newPairs[index]?.heirarchyLabel;
+        newPairs[index].value = cat || {};
+        const hasNoChild = _.size(cat?.child) === 0;
 
-    const validateFields = () => {
-        const tempErrors = {};
-        fieldConfig.forEach(field => {
-            if (field.require && field.editableWhen.includes(mode)) {
-                const value = field.key === 'fabricContent' ? product[field.key].value :
-                    field.key === 'vendorUsername' ? product['vendorId'] : product[field.key];
-                if (!value) {
-                    tempErrors[field.errorMessage] = `${field.name} is required`;
+        if (cat) {
+            if (hasNoChild) {
+                const splitLabel = label ? label.split(' / ') : [];
+                if (splitLabel.length === newPairs[index].count - 1) {
+                    splitLabel[splitLabel.length - 1] = cat.name;
+                    newPairs[index].heirarchyLabel = _.join(splitLabel, ' / ');
+                } else {
+                    newPairs[index].heirarchyLabel = label
+                        ? `${label} / ${cat.name}`
+                        : cat.name;
                 }
+                newPairs[index].openModal = false;
+                newPairs[index].lastChildName = cat.name;
+                newPairs[index].parentCategory = null;
+                setProduct(prev => ({
+                    ...prev,
+                    productCategories: newPairs.filter(cat => !cat.multiSelect),
+                }));
+            } else {
+                newPairs[index].heirarchyLabel = label
+                    ? `${label} / ${cat.name}`
+                    : cat.name;
+                newPairs[index].count = newPairs[index].count + 1;
+                newPairs[index].options = cat.child || [];
+                newPairs[index].parentCategory = cat;
             }
-            if (field.key === 'fabricContent' && product[field.key].value && totalPercent !== 100) {
-                tempErrors[field.key] = 'Total composition percentage must be 100% when fabric content is provided';
-            }
-        });
-        setErrors(tempErrors);
-        return Object.keys(tempErrors).length === 0;
+        } else {
+            newPairs[index].heirarchyLabel = '';
+            newPairs[index].count = 2;
+            newPairs[index].options = getParentChild(newPairs[index].key);
+            newPairs[index].parentCategory = null;
+        }
+        setCategoryPairs(newPairs);
+        setInputError('');
     };
 
-    const handleSubmit = async () => {
-        if (!validateFields()) return;
+    const removeCategory = (index) => {
+        const newPairs = [...categoryPairs];
+        newPairs[index].heirarchyLabel = '';
+        newPairs[index].value = {};
+        newPairs[index].count = 2;
+        newPairs[index].options = getParentChild(newPairs[index].key);
+        newPairs[index].parentCategory = null;
+        setCategoryPairs(newPairs);
+        setProduct(prev => ({
+            ...prev,
+            productCategories: newPairs.filter(cat => !cat.multiSelect),
+        }));
+        openCategoryModal(index, false);
+    };
 
-        setLoading(true);
-        setIsSubmitting(true);
+    const getParentChild = (key) => {
+        return categories.find(cat => cat.name === key)?.child || [];
+    };
 
-        try {
-            const formData = new FormData();
-            const updatedProduct = {
-                ...product,
-                metrics: {
-                    weight: product.gsm,
-                    width: product.width
-                },
-                otherInformation: {
-                    coneWeight: product.coneWeight,
-                    unitOfMeasures: {
-                        isKg: product.uom === 'Kg',
-                        isMeter: product.uom === 'Meter',
-                        isYard: product.uom === 'Yard'
+    const getAvailableCategoryKeys = (currentIndex) => {
+        const selectedKeys = categoryPairs.map(pair => pair.key);
+        return categoryName.filter(
+            key => !selectedKeys.includes(key) || categoryPairs[currentIndex].key === key
+        );
+    };
+
+    const goBackInHierarchy = (index) => {
+        const newPairs = [...categoryPairs];
+        const pair = newPairs[index];
+        if (pair.parentCategory && pair.parentCategory.parentId) {
+            api.get(`product-category/category/${pair.parentCategory.parentId}`)
+                .then(res => {
+                    const parentCategory = res.response;
+                    if (parentCategory) {
+                        newPairs[index].options = parentCategory.child || [];
+                        newPairs[index].parentCategory = parentCategory;
+                        const splitLabel = pair.heirarchyLabel.split(' / ');
+                        splitLabel.pop();
+                        newPairs[index].heirarchyLabel = splitLabel.join(' / ');
+                        newPairs[index].count = pair.count - 1;
+                        setCategoryPairs(newPairs);
                     }
-                }
-            };
-
-            formData.append('product', JSON.stringify(updatedProduct));
-
-            if (product.imageFile && product.imageFile.uri) {
-                formData.append('image', {
-                    uri: product.imageFile.uri,
-                    name: 'image.jpg',
-                    type: 'image/jpeg'
+                })
+                .catch(error => {
+                    console.log('Error fetching parent category:', error);
                 });
-            }
-
-            const token = storage.getString('token');
-            const url = `${backendUrl}/draftProduct`;
-
-            const method = 'post';
-
-            await axios[method](url, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            Alert.alert(
-                'Success',
-                productId ? 'Product updated successfully' : 'Product created successfully',
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-            );
-        } catch (error) {
-            console.log('Submission error:', error?.response || error?.message);
-            Alert.alert('Error', 'Failed to save product');
-        } finally {
-            setLoading(false);
-            setIsSubmitting(false);
+        } else {
+            newPairs[index].options = getParentChild(pair.key);
+            newPairs[index].heirarchyLabel = '';
+            newPairs[index].count = 2;
+            newPairs[index].parentCategory = null;
+            setCategoryPairs(newPairs);
         }
     };
-
 
     const getVisibleFields = () => {
-        if (mode === 'new') {
-            return fieldConfig.filter(field => field.editableWhen.includes('new'));
-        } else if (mode === 'in_progress') {
-            return fieldConfig.filter(field =>
-                field.editableWhen.includes('in_progress') ||
-                field.viewableIn.includes('in_progress')
-            );
-        } else if (mode === 'unapproved') {
-            return fieldConfig.filter(field =>
-                field.viewableIn.includes('unapproved') &&
-                (field.editableWhen.includes('new') || field.editableWhen.includes('in_progress'))
-            );
-        }
-        return [];
+        return fieldConfig.filter(field => field.viewableIn.includes(mode));
     };
 
+    const isEditable = (field) => {
+        return field.editableWhen.includes(mode);
+    };
 
-    const renderRadioButton = (item, selectedValue, onSelect, isEditable) => (
-        <TouchableOpacity
-            key={item.value}
-            style={styles.radioContainer}
-            onPress={() => isEditable && onSelect(item.value)}
-            disabled={!isEditable}
-        >
-            <Icon
-                name={selectedValue === item.value ? 'dot-circle-o' : 'circle-o'}
-                size={20}
-                color={isEditable ? common.PRIMARY_COLOR : '#999'}
-            />
+    const renderRadioButton = (item, selectedValue, onChange, isEditable) => (
+        <View key={item.value} style={styles.radioContainer}>
+            <TouchableOpacity
+                onPress={() => isEditable && onChange(item.value)}
+                disabled={!isEditable}
+            >
+                <MaterialIcon
+                    name={selectedValue === item.value ? 'radio-button-checked' : 'radio-button-unchecked'}
+                    size={24}
+                    color={isEditable ? common.PRIMARY_COLOR : '#888'}
+                />
+            </TouchableOpacity>
             <Text style={[styles.radioLabel, !isEditable && styles.disabledText]}>
                 {item.label}
             </Text>
-        </TouchableOpacity>
+        </View>
     );
 
-    const renderPairItem = ({ item, index }) => (
+    const renderFabricPairItem = ({ item, index }) => (
         <View style={styles.pairRow} key={index}>
             <View style={styles.pickerContainer}>
                 <PickerSelect
@@ -658,8 +930,8 @@ const ProductEdit = ({ route }) => {
                     onValueChange={(value) => handleFabricSelectChange(index, value)}
                     items={[
                         { label: "Select Fabric", value: "" },
-                        ...getAvailableKeys(index).map(key => ({
-                            label: lastChild.find(lc => lc.categoryId === key)?.name || key,
+                        ...getAvailableFabricKeys(index).map(key => ({
+                            label: keyToNameMap[key],
                             value: key
                         }))
                     ]}
@@ -674,9 +946,16 @@ const ProductEdit = ({ route }) => {
                     onChangeText={(text) => handleFabricValueChange(index, text)}
                     editable={!!item.key}
                 />
-                <MaterialIcon name="percent" size={20} style={styles.percentIcon} />
+                <MaterialIcon
+                    name="percent"
+                    size={20}
+                    style={styles.percentIcon}
+                />
                 {index > 0 && (
-                    <TouchableOpacity onPress={() => removePair(index)} style={styles.deleteButton}>
+                    <TouchableOpacity
+                        onPress={() => removeFabricPair(index)}
+                        style={styles.deleteButton}
+                    >
                         <Icon name="trash" size={20} color="#ff4444" />
                     </TouchableOpacity>
                 )}
@@ -684,31 +963,111 @@ const ProductEdit = ({ route }) => {
         </View>
     );
 
+    const renderCategoryPairItem = ({ item, index }) => (
+        <View key={index} style={styles.categoryRow}>
+            <View style={styles.categoryColumn}>
+                <PickerSelect
+                    value={item.key}
+                    onValueChange={(value) => handleCategorySelectChange(index, value)}
+                    items={getAvailableCategoryKeys(index).map(key => ({
+                        label: key,
+                        value: key,
+                    }))}
+                    placeholder={{ label: 'Select category', value: '' }}
+                    style={styles.picker}
+                />
+                {inputError?.categoryErrors?.[index]?.categoryError && (
+                    <Text style={styles.errorText}>
+                        {inputError.categoryErrors[index].categoryErrorMessage ||
+                            inputError.categoryErrors[index].categorysErrorMessage}
+                    </Text>
+                )}
+            </View>
+            <View style={styles.levelColumn}>
+                {!item.multiSelect ? (
+                    <TouchableOpacity
+                        style={[
+                            styles.levelInput,
+                            { opacity: item.key ? 1 : 0.5 },
+                        ]}
+                        onPress={() => item.key && openCategoryModal(index, true)}
+                        disabled={!item.key}
+                    >
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder="Select a category"
+                            value={item.heirarchyLabel}
+                            editable={false}
+                            pointerEvents="none"
+                        />
+                    </TouchableOpacity>
+                ) : (
+                    <PickerMultiSelect
+                        groupName={item.key}
+                        items={
+                            multiSelect[item.key]?.map(item => ({
+                                value: item.id,
+                                label: item.name,
+                            })) || []
+                        }
+                        selectedItems={selectedValues[item.key] || []}
+                        onSelectionsChange={(newSelectedValues) => {
+                            const categoryKey = item.key;
+                            setSelectedValues(prevValues => {
+                                const updatedValues = {
+                                    ...prevValues,
+                                    [categoryKey]: newSelectedValues,
+                                };
+                                const list =
+                                    product?.productCategoriesList?.filter(
+                                        item => item?.productGroupName !== categoryKey
+                                    ) || [];
+                                setProduct(prevProduct => ({
+                                    ...prevProduct,
+                                    productCategoriesList: [
+                                        ...list,
+                                        ...multiSelect[categoryKey]?.filter(item =>
+                                            newSelectedValues.includes(item.id)
+                                        ),
+                                    ],
+                                }));
+                                return updatedValues;
+                            });
+                        }}
+                        placeholder="Select categories"
+                    />
+                )}
+                {inputError?.categoryErrors?.[index]?.categoryError && (
+                    <Text style={styles.errorText}>
+                        {inputError.categoryErrors[index].categoryErrorMessage ||
+                            inputError.categoryErrors[index].categorysErrorMessage}
+                    </Text>
+                )}
+            </View>
+            <View style={styles.actionColumn}>
+                {index > 0 && item.key !== 'Fabric Type' && (
+                    <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() =>
+                            removeCategoryPair(
+                                index,
+                                item.isMandatory ? item.key : item.key
+                            )
+                        }
+                        disabled={item.isMandatory}
+                    >
+                        <Icon name="trash" size={20} color="#dc3545" />
+                    </TouchableOpacity>
+                )}
+            </View>
+        </View>
+    );
+
     const renderField = (field) => {
-        const isViewMode = mode === 'unapproved';
-        const isEditable = !isViewMode && field.editableWhen.includes(mode);
         const value = product[field.key];
+        const isEditableField = isEditable(field);
 
         switch (field.fieldType) {
-            case 'textField':
-                return (
-                    <View key={field.id} style={styles.formGroup}>
-                        <Text style={styles.label}>
-                            {field.name}
-                            {field.require && <Text style={styles.errorText}> *</Text>}
-                        </Text>
-                        <TextInput
-                            style={[styles.input, errors[field.errorMessage] && { borderColor: 'red' }, !isEditable && styles.disabledInput]}
-                            value={String(value)}
-                            onChangeText={text => handleChange(text, field.key)}
-                            placeholder={field.placeholder}
-                            keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                            editable={isEditable}
-                        />
-                        {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
-                    </View>
-                );
-
             case 'vendorPicker':
                 return (
                     <View key={field.id} style={styles.formGroup}>
@@ -718,9 +1077,29 @@ const ProductEdit = ({ route }) => {
                         </Text>
                         <VendorPicker
                             value={product.vendorId}
-                            onValueChange={(val) => handleChange(val, 'vendorUsername')}
+                            onValueChange={(val) => handleChange(val, field.key)}
                             placeholder={field.placeholder}
-                            disabled={!isEditable}
+                            disabled={!isEditableField}
+                        />
+                        {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
+                    </View>
+                );
+
+            case 'textField':
+                return (
+                    <View key={field.id} style={styles.formGroup}>
+                        <Text style={styles.label}>
+                            {field.name}
+                            {field.require && <Text style={styles.errorText}> *</Text>}
+                        </Text>
+                        <TextInput
+                            style={[styles.input, !isEditableField && styles.disabledInput, errors[field.errorMessage] && { borderColor: 'red' }]}
+                            value={value ? value.toString() : ''}
+                            onChangeText={(val) => handleChange(val, field.key)}
+                            placeholder={field.placeholder}
+                            keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                            editable={isEditableField}
+                            placeholderTextColor="#999"
                         />
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
                     </View>
@@ -735,7 +1114,7 @@ const ProductEdit = ({ route }) => {
                         </Text>
                         <View style={styles.radioGroup}>
                             {field.items.map(item =>
-                                renderRadioButton(item, value, (val) => handleChange(val, field.key), isEditable)
+                                renderRadioButton(item, value, (val) => handleChange(val, field.key), isEditableField)
                             )}
                         </View>
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
@@ -750,14 +1129,14 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        {isEditable && (
+                        {isEditableField && (
                             <TouchableOpacity style={styles.imageButton} onPress={handleImagePick}>
                                 <Text style={styles.imageButtonText}>
                                     {value ? 'Change Image' : field.placeholder}
                                 </Text>
                             </TouchableOpacity>
                         )}
-                        {value && <Image source={{ uri }} style={styles.image} />}
+                        {value ? <Image source={{ uri }} style={styles.image} /> : <View style={styles.image} />}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
                     </View>
                 );
@@ -769,26 +1148,60 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        {isEditable ? (
+                        {isEditableField ? (
                             <>
-                                <TouchableOpacity
-                                    style={styles.compositionButton}
-                                    onPress={() => setShowCompositionModal(true)}
-                                >
-                                    <Text style={styles.compositionButtonText}>
-                                        {fCCValue || 'Setup Composition'}
-                                    </Text>
-                                </TouchableOpacity>
-                                <Text style={styles.totalText}>
-                                    Total: {totalPercent}%
-                                </Text>
+                                <View style={styles.topSection}>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>Fabric Content Code</Text>
+                                        <TextInput
+                                            style={[styles.input, errors[field.key] && { borderColor: 'red' }]}
+                                            value={fCCValue}
+                                            editable={false}
+                                        />
+                                    </View>
+                                    <View style={styles.inputGroup}>
+                                        <Text style={styles.label}>FCC Combination</Text>
+                                        <PickerSelect
+                                            value={product?.fabricContent?.value}
+                                            onValueChange={handleFabricChange}
+                                            items={fabricOptions}
+                                            placeholder={{ label: field.placeholder, value: '' }}
+                                        />
+                                    </View>
+                                </View>
+                                <View style={styles.bottomSection}>
+                                    <View style={styles.headerRow}>
+                                        <Text style={styles.headerText}>Fabric</Text>
+                                        <Text style={styles.headerText}>Composition(%)</Text>
+                                    </View>
+                                    <FlatList
+                                        data={selectedFabricPairs}
+                                        renderItem={renderFabricPairItem}
+                                        keyExtractor={(item, index) => index.toString()}
+                                        scrollEnabled={false}
+                                    />
+                                    {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
+                                    {totalPercent < 100 && (
+                                        <TouchableOpacity
+                                            onPress={addNewFabricPair}
+                                            style={styles.addButton}
+                                        >
+                                            <Icon name="plus" size={16} color="#1976d2" />
+                                            <Text style={styles.addButtonText}>Add another attribute</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    <View style={styles.totalContainer}>
+                                        <Text style={styles.totalText}>
+                                            Overall Composition Percentage: <Text style={errors[field.key] ? { color: 'red' } : totalPercent === 100 ? { color: 'green' } : {}}>{totalPercent}%</Text>
+                                        </Text>
+                                    </View>
+                                </View>
                             </>
                         ) : (
                             <Text style={styles.readOnlyText}>
                                 {fCCValue || 'No composition set'}
                             </Text>
                         )}
-                        {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
                     </View>
                 );
 
@@ -799,18 +1212,29 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        {isEditable ? (
-                            <TouchableOpacity
-                                style={styles.categoryButton}
-                                onPress={() => setShowCategoryModal(true)}
-                            >
-                                <Text style={styles.categoryButtonText}>
-                                    {product.fabricType || 'Select Fabric Type'}
-                                </Text>
-                            </TouchableOpacity>
+                        {isEditableField ? (
+                            <View style={styles.inputContainer}>
+                                <View style={styles.headerRow}>
+                                    <Text style={[styles.label, { flex: 1 }]}>Category *</Text>
+                                    <Text style={[styles.label, { flex: 2 }]}>Level *</Text>
+                                    <View style={styles.actionColumn} />
+                                </View>
+                                <FlatList
+                                    data={categoryPairs}
+                                    renderItem={renderCategoryPairItem}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    scrollEnabled={false}
+                                />
+                                {_.size(categories) > _.size(categoryPairs) && (
+                                    <TouchableOpacity style={styles.addButton} onPress={addNewCategoryPair}>
+                                        <Icon name="plus" size={20} color="#007bff" />
+                                        <Text style={styles.addButtonText}>Add another category</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         ) : (
                             <Text style={styles.readOnlyText}>
-                                {product.fabricType || 'No fabric type selected'}
+                                {product.productCategories?.map(cat => cat.heirarchyLabel || cat.key).join(', ') || 'No categories selected'}
                             </Text>
                         )}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
@@ -824,7 +1248,7 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        {isEditable ? (
+                        {isEditableField ? (
                             <View style={styles.checkboxGroup}>
                                 <TouchableOpacity
                                     style={[styles.checkboxButton, value && styles.checkboxButtonActive]}
@@ -855,7 +1279,7 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        {isEditable ? (
+                        {isEditableField ? (
                             <ProductVariant
                                 variants={product.variants || []}
                                 onVariantChange={handleVariantChange}
@@ -874,7 +1298,9 @@ const ProductEdit = ({ route }) => {
     };
 
     return (
-        <ProductContext.Provider value={{ product, setProduct }}>
+        <ProductContext.Provider value={{
+            product, setProduct, inputError, setInputError
+        }}>
             <View style={styles.container}>
                 <ScrollView>
                     {getVisibleFields().map(field => renderField(field))}
@@ -882,7 +1308,7 @@ const ProductEdit = ({ route }) => {
                     {(mode === 'new' || mode === 'in_progress') && (
                         <TouchableOpacity
                             style={styles.submitButton}
-                            onPress={handleSubmit}
+                            onPress={() => { handleSubmit(); }}
                             disabled={isSubmitting}
                         >
                             <Text style={styles.submitButtonText}>
@@ -892,89 +1318,62 @@ const ProductEdit = ({ route }) => {
                     )}
                 </ScrollView>
 
-                {/* Composition Modal */}
-                <Modal visible={showCompositionModal} animationType="slide">
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Fabric Composition</Text>
-                            <TouchableOpacity onPress={() => setShowCompositionModal(false)}>
-                                <Icon name="close" size={24} color="#333" />
-                            </TouchableOpacity>
+                {modalIndex !== null && (
+                    <Modal visible={true} animationType="slide" transparent>
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContainer}>
+                                <View style={styles.modalHeader}>
+                                    <Text style={styles.modalTitle}>Search all categories</Text>
+                                    <TouchableOpacity onPress={() => openCategoryModal(modalIndex, false)}>
+                                        <Icon name="close" size={24} color="#333" />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={styles.modalContent}>
+                                    {(!categoryPairs[modalIndex].value || categoryPairs[modalIndex].options.length > 0) && (
+                                        <>
+                                            <TextInput
+                                                style={styles.searchInput}
+                                                placeholder="Enter a category name"
+                                            />
+                                            <View style={styles.levelContainer}>
+                                                <Text style={styles.levelText}>Level {categoryPairs[modalIndex].count}</Text>
+                                                <View style={styles.divider} />
+                                            </View>
+                                            <View style={{ maxHeight: 300 }}>
+                                                <ScrollView nestedScrollEnabled>
+                                                    {categoryPairs[modalIndex].options.map(cat => (
+                                                        <TouchableOpacity
+                                                            key={cat.id.toString()}
+                                                            style={styles.categoryItem}
+                                                            onPress={() => selectCategory(modalIndex, cat)}
+                                                        >
+                                                            <Text style={styles.categoryText}>{cat.name}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
+                                        </>
+                                    )}
+                                    {categoryPairs[modalIndex].heirarchyLabel && (
+                                        <View style={styles.heirarchyContainer}>
+                                            <Text style={styles.heirarchyText}>
+                                                {categoryPairs[modalIndex].heirarchyLabel}
+                                            </Text>
+                                            <View style={styles.heirarchyActions}>
+                                                <TouchableOpacity onPress={() => goBackInHierarchy(modalIndex)}>
+                                                    <Icon name="arrow-left" size={20} color="#007bff" />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => removeCategory(modalIndex)}>
+                                                    <Icon name="trash" size={20} color="#dc3545" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                            </View>
                         </View>
-
-                        <View style={styles.modalContent}>
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Fabric Content Code</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={fCCValue}
-                                    editable={false}
-                                />
-                            </View>
-
-                            <View style={styles.inputGroup}>
-                                <Text style={styles.label}>FCC Combination</Text>
-                                <PickerSelect
-                                    value={product?.fabricContent?.value}
-                                    onValueChange={handleFabricChange}
-                                    items={fabricOptions}
-                                    placeholder={{ label: "Select Combination" }}
-                                />
-                            </View>
-
-                            <View style={styles.headerRow}>
-                                <Text style={styles.headerText}>Fabric</Text>
-                                <Text style={styles.headerText}>Composition(%)</Text>
-                            </View>
-
-                            <FlatList
-                                data={selectedPairs}
-                                renderItem={renderPairItem}
-                                keyExtractor={(item, index) => index.toString()}
-                            />
-
-                            {totalPercent < 100 && (
-                                <TouchableOpacity onPress={addNewPair} style={styles.addButton}>
-                                    <Icon name="plus" size={16} color="#1976d2" />
-                                    <Text style={styles.addButtonText}>Add another attribute</Text>
-                                </TouchableOpacity>
-                            )}
-
-                            <View style={styles.totalContainer}>
-                                <Text style={styles.totalText}>
-                                    Overall Composition Percentage: {totalPercent}%
-                                </Text>
-                                {errors.fabricContent && (
-                                    <Text style={styles.errorText}>{errors.fabricContent}</Text>
-                                )}
-                            </View>
-
-                            <TouchableOpacity
-                                style={styles.modalSaveButton}
-                                onPress={() => setShowCompositionModal(false)}
-                            >
-                                <Text style={styles.modalSaveButtonText}>Save Composition</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-
-                {/* Category/Fabric Type Modal */}
-                <Modal visible={showCategoryModal} animationType="slide">
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Select Fabric Type</Text>
-                            <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                                <Icon name="close" size={24} color="#333" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ProductCategorys
-                            onSelect={handleFabricTypeChange}
-                            categories={categories}
-                        />
-                    </View>
-                </Modal>
+                    </Modal>
+                )}
 
                 {loading && (
                     <View style={styles.loaderContainer}>
@@ -1049,35 +1448,11 @@ const styles = StyleSheet.create({
     image: {
         width: 200,
         height: 200,
-        resizeMode: 'contain',
+        resizeMode: 'cover',
         alignSelf: 'center',
         marginTop: 10,
         borderRadius: 8,
         backgroundColor: '#f0f0f0',
-    },
-    compositionButton: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 4,
-        padding: 12,
-        marginBottom: 10,
-    },
-    compositionButtonText: {
-        fontSize: 16,
-        fontFamily: font.regular,
-        color: '#333',
-    },
-    categoryButton: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 4,
-        padding: 12,
-        marginBottom: 10,
-    },
-    categoryButtonText: {
-        fontSize: 16,
-        fontFamily: font.regular,
-        color: '#333',
     },
     readOnlyText: {
         fontSize: 16,
@@ -1131,72 +1506,26 @@ const styles = StyleSheet.create({
         marginTop: 5,
         fontFamily: font.semiBold,
     },
-    picker: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 4,
-        padding: 12,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    pickerText: {
-        fontSize: 16,
-        fontFamily: font.regular,
-        color: '#333',
-    },
-    multiSelectContainer: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 4,
-        padding: 12,
-        minHeight: 50,
-        justifyContent: 'center',
-    },
-    multiSelectText: {
-        fontSize: 16,
-        fontFamily: font.regular,
-        color: '#333',
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: '#fff',
-        padding: 16,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingBottom: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        marginBottom: 16,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontFamily: font.bold,
-        color: '#333',
-    },
-    modalContent: {
-        flex: 1,
+    topSection: {
+        marginBottom: 20,
     },
     inputGroup: {
         marginBottom: 15,
+    },
+    bottomSection: {
+        marginTop: 10,
     },
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 10,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#eee',
     },
     headerText: {
-        fontFamily: font.semiBold,
-        fontSize: 16,
+        fontSize: 14,
         color: '#333',
         flex: 1,
         textAlign: 'center',
+        fontFamily: font.bold,
     },
     pairRow: {
         flexDirection: 'row',
@@ -1206,6 +1535,7 @@ const styles = StyleSheet.create({
     pickerContainer: {
         flex: 1,
         marginRight: 10,
+        overflow: 'hidden',
     },
     valueContainer: {
         flex: 1,
@@ -1250,48 +1580,145 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: font.semiBold,
         color: '#333',
-        textAlign: 'center',
     },
-    modalSaveButton: {
-        backgroundColor: common.PRIMARY_COLOR,
-        padding: 15,
-        borderRadius: 4,
-        alignItems: 'center',
-        marginTop: 20,
+    inputContainer: {
+        backgroundColor: '#fff',
+        // padding: 16,
+        borderRadius: 8,
     },
-    modalSaveButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontFamily: font.semiBold,
-    },
-    categoryItem: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+    categoryRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 16,
+        backgroundColor: '#f9f9f9',
+        padding: 8,
+        borderRadius: 4,
     },
-    categoryText: {
-        fontSize: 16,
+    categoryColumn: {
+        flex: 1,
+        marginRight: 8,
+    },
+    levelColumn: {
+        flex: 2,
+    },
+    actionColumn: {
+        width: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    picker: {
         fontFamily: font.regular,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 4,
+    },
+    levelInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        backgroundColor: '#fff',
+        borderRadius: 4,
+    },
+    inputText: {
+        fontSize: 13,
+        fontFamily: font.semiBold,
         color: '#333',
     },
-    loaderContainer: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+    removeButton: {
+        padding: 8,
+        backgroundColor: '#f8d7da',
+        borderRadius: 4,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    categoryTypeContainer: {
-        flex: 1,
+    modalContainer: {
+        width: '90%',
+        maxHeight: '80%',
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontFamily: font.semiBold,
+        color: '#333',
+    },
+    modalContent: {
         padding: 16,
     },
-    categoryTypeTitle: {
-        fontSize: 18,
-        fontFamily: font.bold,
+    searchInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        borderRadius: 4,
+        fontFamily: font.regular,
         marginBottom: 16,
+    },
+    levelContainer: {
+        marginBottom: 16,
+    },
+    levelText: {
+        fontSize: 14,
+        fontFamily: font.semiBold,
         color: '#333',
+        marginBottom: 8,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#e0e0e0',
+    },
+    categoryItem: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    categoryText: {
+        fontSize: 14,
+        fontFamily: font.semiBold,
+        color: '#333',
+    },
+    heirarchyContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+        marginTop: 16,
+    },
+    heirarchyText: {
+        fontSize: 14,
+        fontFamily: font.semiBold,
+        color: '#333',
+        flex: 1,
+    },
+    heirarchyActions: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    loaderContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
     },
 });
 
