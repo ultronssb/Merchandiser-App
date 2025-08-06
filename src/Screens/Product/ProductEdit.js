@@ -33,9 +33,10 @@ const ProductEdit = ({ route }) => {
     const mode = route?.params?.statusProduct || 'new';
     const productId = route?.params?.productId;
 
+    
     const initialProductState = {
         vendorId: '',
-        vendorUsername: '',
+       vendorUsername: '',
         vendorProductId: '',
         vendorProductName: '',
         gsm: '',
@@ -69,6 +70,7 @@ const ProductEdit = ({ route }) => {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [vendorname, setVendorname] = useState('');
     const [fabricTypes, setFabricTypes] = useState([]);
     const [variantOptions, setVariantOptions] = useState([]);
     const [fabricContent, setFabricContent] = useState({});
@@ -94,7 +96,7 @@ const ProductEdit = ({ route }) => {
 
     const fieldConfig = [
         {
-            id: '1', name: 'Vendor', fieldType: 'vendorPicker', key: 'vendorUsername', require: true,
+            id: '1', name: 'Vendor', fieldType: 'vendorPicker', key: 'vendorId', require: true,
             placeholder: 'Select Vendor', errorMessage: 'vendorId', editableWhen: ['new'],
             viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
@@ -169,7 +171,6 @@ const ProductEdit = ({ route }) => {
         fetchVariant();
         getFabricValues();
         fetchCategories();
-
         if (productId) {
             fetchProduct(productId);
         }
@@ -181,6 +182,7 @@ const ProductEdit = ({ route }) => {
             setFabricTypes(res.response.map(item => ({ label: item.name, value: item.id })));
         } catch (error) {
             console.log('Error fetching fabric types:', error?.response || error);
+            console.log('Error fetching fabric types:', error?.response || error);
         }
     };
 
@@ -189,6 +191,7 @@ const ProductEdit = ({ route }) => {
             const res = await api.get('variant');
             setVariantOptions(res.response.map(item => ({ label: item.value, value: item.id })));
         } catch (error) {
+            console.log('Error fetching variants:', error?.response || error);
             console.log('Error fetching variants:', error?.response || error);
         }
     };
@@ -205,6 +208,7 @@ const ProductEdit = ({ route }) => {
             }
         } catch (error) {
             console.log('Error fetching variants:', error?.response || error);
+            console.log('Error fetching variants:', error?.response || error);
         }
     };
 
@@ -218,6 +222,7 @@ const ProductEdit = ({ route }) => {
             })) || [];
             setFabricOptions([{ label: "Select Combination", value: "" }, ...options]);
         } catch (error) {
+            console.log("Error fetching fabric values: ", error?.response || error);
             console.log("Error fetching fabric values: ", error?.response || error);
         }
     };
@@ -259,6 +264,7 @@ const ProductEdit = ({ route }) => {
             setCategories(categories);
             setCategorysAndCategoryPairs(mandatoryCategories);
         } catch (error) {
+            console.log('Error fetching categories:', error?.response || error);
             console.log('Error fetching categories:', error?.response || error);
         }
     };
@@ -350,7 +356,7 @@ const ProductEdit = ({ route }) => {
         try {
             const res = await api.get(`draftProduct/get/${id}`);
             if (res?.response) {
-                const vendorRes = await api.get(`vendor/${res.response.vendorId}`);
+                const vendorRes = await api.get(`vendor/${res?.response?.vendorId}`);
                 const fabricContent = res.response.fabricContent || { composition: {}, value: '' };
                 const compositionPairs = Object.entries(fabricContent.composition || {}).map(([key, value]) => ({
                     key,
@@ -359,7 +365,7 @@ const ProductEdit = ({ route }) => {
                 setProduct({
                     ...res.response,
                     status: res.response.status || mode,
-                    vendorId: res.response.vendorId,
+                    vendorId: res.response?.vendorId,
                     vendorUsername: vendorRes?.response?.username || '',
                     vendorProductId: res.response.vendorProductId || '',
                     gsm: res.response.metrics?.weight || '',
@@ -384,6 +390,7 @@ const ProductEdit = ({ route }) => {
                 setSelectedFabricPairs(compositionPairs.length > 0 ? compositionPairs : [{ key: '', value: '0' }]);
             }
         } catch (error) {
+            console.log('Error fetching product:', error?.response || error);
             console.log('Error fetching product:', error?.response || error);
         }
     };
@@ -419,7 +426,7 @@ const ProductEdit = ({ route }) => {
             }));
         }
     };
-
+console.log(product," product")
     const handleImagePick = async () => {
         const res = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
         if (res.assets && res.assets[0]) {
@@ -466,7 +473,7 @@ const ProductEdit = ({ route }) => {
         const formData = new FormData();
         let updatedProduct = {
             ...product,
-            vendorId: product.vendorId
+            vendorId: product?.vendorId
         };
 
         formData.append('product', JSON.stringify(updatedProduct));
@@ -615,6 +622,7 @@ const ProductEdit = ({ route }) => {
             setFCCValue(formattedFCC);
         } catch (error) {
             console.log("Error generating fabric content code: ", error?.response || error);
+            console.log("Error generating fabric content code: ", error?.response || error);
         }
     };
 
@@ -731,6 +739,10 @@ const ProductEdit = ({ route }) => {
             totalProductPercent: totalSum,
             fabricContent: {
                 ...prev.fabricContent,
+                composition: sortedPairs.reduce((acc, [key, value]) => {
+                    acc[key] = parseInt(value, 10);
+                    return acc;
+                }, {}),
                 composition: sortedPairs.reduce((acc, [key, value]) => {
                     acc[key] = parseInt(value, 10);
                     return acc;
@@ -940,11 +952,11 @@ const ProductEdit = ({ route }) => {
             </View>
             <View style={styles.valueContainer}>
                 <TextInput
+                    style={styles.valueInput}
                     value={item.value}
-                    style={[styles.valueInput, errors.fabricContent && { borderColor: 'red' }]}
+                    onChangeText={(value) => handleFabricValueChange(index, value)}
+                    placeholder="0"
                     keyboardType="numeric"
-                    onChangeText={(text) => handleFabricValueChange(index, text)}
-                    editable={!!item.key}
                 />
                 <MaterialIcon
                     name="percent"
@@ -1075,16 +1087,28 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
-                        <VendorPicker
-                            value={product.vendorId}
+                        {product?.vendorId !==null && mode!=='new'?
+                        
+                          <TextInput
+                            style={[styles.input, !isEditableField && styles.disabledInput, errors[field.errorMessage] && { borderColor: 'red' }]}
+                            // value={value ? value.toString() : ''}
+                            value={product?.vendorUsername}
+                            // onChangeText={(val) => handleChange(val, field.key)}
+                            placeholder={field.placeholder}
+                            // keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                            editable={false}
+                            placeholderTextColor="#999"
+                        />:<VendorPicker
+                            value={product?.vendorId}
                             onValueChange={(val) => handleChange(val, field.key)}
                             placeholder={field.placeholder}
                             disabled={!isEditableField}
-                        />
+                        />}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
                     </View>
                 );
 
+       
             case 'textField':
                 return (
                     <View key={field.id} style={styles.formGroup}>
@@ -1148,6 +1172,7 @@ const ProductEdit = ({ route }) => {
                             {field.name}
                             {field.require && <Text style={styles.errorText}> *</Text>}
                         </Text>
+         
                         {isEditableField ? (
                             <>
                                 <View style={styles.topSection}>
@@ -1234,7 +1259,7 @@ const ProductEdit = ({ route }) => {
                             </View>
                         ) : (
                             <Text style={styles.readOnlyText}>
-                                {product.productCategories?.map(cat => cat.heirarchyLabel || cat.key).join(', ') || 'No categories selected'}
+                                {product?.productCategories.length>0 && product?.productCategories?.map(cat => cat?.heirarchyLabel || cat?.key).join(', ') || 'No categories selected'}
                             </Text>
                         )}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
