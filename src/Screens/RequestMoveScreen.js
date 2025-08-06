@@ -64,7 +64,7 @@ const RequestMoveScreen = ({ route }) => {
         try {
             setIsLoading(true);
             const res = await api.get(
-                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&requestInfo=${params?.requestInfo}`
+                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqIsnfo=${params?.requestInfo}`
             );
             const newProducts = res.response.content.map((item) => ({
                 ...item,
@@ -151,7 +151,7 @@ const RequestMoveScreen = ({ route }) => {
     const renderCard = ({ item, index }) => {
         return (
             <TouchableOpacity style={styles.cardContainer} key={index} onPress={() => {
-                navigation.navigate('VendorProductCreate', { productId: item?.draftProductId });
+                navigation.navigate('ProductEdit', { productId: item?.draftProductId, statusProduct: 'in_progress' });
             }}>
                 {item.image ? (
                     <Image

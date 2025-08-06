@@ -32,8 +32,8 @@ const RequestMoveScreen = ({ route }) => {
         heading: '',
         isRight: false,
         rightButtonText: 'OK',
-        triggerFunction: () => {},
-        setShowAlert: () => {},
+        triggerFunction: () => { },
+        setShowAlert: () => { },
         showAlert: false,
     });
 
@@ -64,11 +64,11 @@ const RequestMoveScreen = ({ route }) => {
         try {
             setIsLoading(true);
             const res = await api.get(
-                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&requestInfo=${params?.requestInfo}`
+                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqInfo=`
             );
             const newProducts = res.response.content.map((item) => ({
                 ...item,
-                image: item.image?.replace('/api', ''),
+                image: item?.image?.replace('/api', ''),
             }));
             setProducts(newProducts);
             setRowCount(res.response?.totalElements || 0);
@@ -86,7 +86,7 @@ const RequestMoveScreen = ({ route }) => {
                 heading: 'Error',
                 isRight: false,
                 rightButtonText: 'OK',
-                triggerFunction: () => {},
+                triggerFunction: () => { },
                 setShowAlert: closeAlert,
                 showAlert: true,
             });
@@ -104,7 +104,7 @@ const RequestMoveScreen = ({ route }) => {
     const onRefresh = () => {
         setRefreshing(true);
         setProducts([]);
-        setPagination({ pageIndex: 0, pageSize: 5 });
+        setPagination({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize });
         fetchProducts(0);
     };
 
@@ -152,7 +152,7 @@ const RequestMoveScreen = ({ route }) => {
 
         return (
             <TouchableOpacity style={styles.cardContainer} key={index} onPress={() => {
-                navigation.navigate('VendorProductCreate', { productId: item?.draftProductId });
+                navigation.navigate('ProductEdit', { productId: item?.draftProductId, statusProduct: 'view' });
             }}>
                 {item.image ? (
                     <Image
@@ -243,7 +243,7 @@ const RequestMoveScreen = ({ route }) => {
                         style={[
                             styles.paginationButton,
                             (pagination.pageIndex + 1) * pagination.pageSize >= rowCount &&
-                                styles.disabledButton,
+                            styles.disabledButton,
                         ]}
                         disabled={
                             (pagination.pageIndex + 1) * pagination.pageSize >= rowCount
@@ -303,9 +303,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 6,
         elevation: 3,
-        flexDirection:'row',
-        justifyContent:'space-between',
-        alignItems:'center'
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
     },
     cardRow: {
         flexDirection: 'column',
@@ -323,14 +323,14 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#333',
         flex: 1,
-        alignSelf:'flex-end'
+        alignSelf: 'flex-end'
     },
     productImage: {
         width: 150,
         height: 150,
         borderRadius: 4,
-        marginBottom:10,
-        backgroundColor:'#ccc',
+        marginBottom: 10,
+        backgroundColor: '#ccc',
         alignSelf: 'center',
     },
     noDataText: {

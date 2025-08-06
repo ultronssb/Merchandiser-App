@@ -7,6 +7,7 @@ import {
   View,
   Image,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -17,23 +18,22 @@ import { font } from '../Settings/Theme';
 const HomeScreen = () => {
   const [profile, setProfile] = useState({});
   const [currentDateTime, setCurrentDateTime] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const userId = storage.contains('user') ? JSON.parse(storage.getString('user'))?.userId : null;
-      if (!userId) return;
+  const fetchProfile = async () => {
+    const userId = storage.contains('user') ? JSON.parse(storage.getString('user'))?.userId : null;
+    if (!userId) return;
 
-      try {
-        const res = await api.get(`user/${userId}`);
-        setProfile(res?.response || {});
-      } catch (err) {
-        console.log('Error fetching profile:', err?.response);
-      }
-    };
+    try {
+      const res = await api.get(`user/${userId}`);
+      setProfile(res?.response || {});
+    } catch (err) {
+      console.log('Error fetching profile:', err?.response);
+    }
+  };
 
-    fetchProfile();
-
+  const updateCurrentTime = () => {
     const now = new Date();
     const options = {
       month: 'short',
@@ -45,6 +45,18 @@ const HomeScreen = () => {
       hour12: true,
     };
     setCurrentDateTime(now.toLocaleString('en-US', options).replace(',', '') + ' IST');
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchProfile();
+    // updateCurrentTime();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    updateCurrentTime();
+    onRefresh();
   }, []);
 
   const handleNavigation = (route, params = {}) => {
@@ -52,25 +64,30 @@ const HomeScreen = () => {
   };
 
   const userName = `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || 'Guest User';
+
   useFocusEffect(
     useCallback(() => {
-      // Set status bar color when screen is focused
       StatusBar.setBackgroundColor(common.PRIMARY_COLOR);
       StatusBar.setBarStyle('light-content');
-
-      // Revert to default on unfocus
       return () => {
-        StatusBar.setBackgroundColor('#ffffff'); // or your desired default
+        StatusBar.setBackgroundColor('#ffffff');
         StatusBar.setBarStyle('dark-content');
       };
     }, [])
   );
 
   return (
-    <View style={styles.container}>
-      {/* <StatusBar backgroundColor={common.PRIMARY_COLOR} barStyle="light-content" /> */}
-
-      {/* Header */}
+    <ScrollView
+      contentContainerStyle={styles.scrollViewContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[common.PRIMARY_COLOR]}
+          tintColor="#fff"
+        />
+      }
+    >
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <Image source={require('../../assets/images/profile.png')} style={styles.profileImage} />
@@ -81,31 +98,26 @@ const HomeScreen = () => {
           </View>
         </View>
       </View>
-
-      {/* Buttons */}
-      <ScrollView contentContainerStyle={styles.buttonsContainer}>
+      <View style={styles.buttonsContainer}>
         <View style={styles.buttonGrid}>
-
           <HomeButton
-            icon="file-text"  // Changed from "plus-square" to "file-text" for drafts
-            label="View Products"
-            onPress={() => handleNavigation('ViewProducts', { requestInfo: null })}
+            icon="list-alt"
+            label="New Products"
+            onPress={() => handleNavigation('NewProducts', { requestInfo: null })}
           />
           <HomeButton
-            icon="info-circle"  // Changed from "users" to "info-circle" for information
+            icon="spinner"
             label="InProgress Products"
             onPress={() => handleNavigation('InProgressProducts', { requestInfo: true })}
           />
-          
           <HomeButton
-            icon="hourglass"  // Changed from "dropbox" to "hourglass" for pending/awaiting approval
-            label="Unapproved Products"
-            onPress={() => handleNavigation('UnapprovedProducts', { requestInfo: false })}
+            icon="times-circle"
+            label="Approval Products"
+            onPress={() => handleNavigation('ApprovalProducts', { requestInfo: false })}
           />
-          
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -119,17 +131,19 @@ const HomeButton = ({ icon, label, onPress }) => (
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+  scrollViewContainer: {
+    flexGrow: 1,
+    backgroundColor: '#fff',
   },
   header: {
     backgroundColor: common.PRIMARY_COLOR,
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20, height: '45%',
-    alignItems: 'center', justifyContent: 'center'
+    borderBottomRightRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '45%'
   },
   profileSection: {
     flexDirection: 'row',
@@ -169,7 +183,6 @@ const styles = StyleSheet.create({
   },
   buttonGrid: {
     flexDirection: 'column',
-    // flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -178,7 +191,7 @@ const styles = StyleSheet.create({
     width: '68%',
     marginBottom: 15,
     paddingVertical: 20,
-    borderRadius: '5%',
+    borderRadius: 10,
     alignItems: 'center',
     elevation: 3,
     shadowColor: '#000',

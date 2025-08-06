@@ -18,6 +18,7 @@ import DisplayVendor from '../Screens/Vendor/DisplayVendor';
 import api from '../service/api';
 import LogoutHandler from '../service/LogoutHandler';
 import { font } from '../Settings/Theme';
+import ProductEdit from '../Screens/Product/ProductEdit';
 
 const screenWidth = Dimensions.get('window').width;
 const isLargeScreen = screenWidth > 768;
@@ -39,8 +40,11 @@ const CustomHeader = () => {
   const title = route.params?.isEditCustomer === true ?
     "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor"
       : route?.name === "DisplayVendor" ? "Vendor Details" : route?.name === 'DisplayProduct' ? "Products"
-        : route?.name === "VendorProductCreate" ? "Create Product"
-          : formatRouteName(route.name);
+        : route?.name === "VendorProductCreate" ? "Create Product" : route?.params?.statusProduct === "new" ? "Create Product"
+          : route?.params?.statusProduct === "in_progress" ? "In-Progress Product"
+            : route?.params?.statusProduct === "unapproved" ? "Approval Product"
+              : route?.params?.statusProduct === "view" ? "New Product"
+                : formatRouteName(route.name);
 
   return (
     <View style={styles.header}>
@@ -72,7 +76,7 @@ const MainStack = () => {
     });
   };
   const MAX_RETRIES = 10; // Avoid infinite loop
-  const RETRY_DELAY = 1000; // 1 second
+  const RETRY_DELAY = 2000; // 1 second
 
   const fetchAllProfile = async (retryCount = 0) => {
     const userString = storage.contains('user') ? storage.getString('user') : null;
@@ -158,24 +162,26 @@ const MainStack = () => {
         }, 100);
       },
     },
-      {
+    {
       order: 1,
       displayOrder: 1,
       label: 'View Vendor',
       onPress: () => {
         closeDrawer();
         setTimeout(() => {
-          navigation.navigate("DisplayVendor")
+          navigation.navigate("DisplayVendor");
         }, 100);
       },
-    },  {
+    }, {
       order: 1,
       displayOrder: 1,
       label: 'Create Product',
       onPress: () => {
         closeDrawer();
         setTimeout(() => {
-           navigation.navigate("VendorProductCreate")
+          navigation.navigate("ProductEdit", {
+            statusProduct: "new"
+          });
         }, 100);
       },
     },
@@ -254,12 +260,10 @@ const MainStack = () => {
           <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
           <Stack.Screen name="VendorCreate" component={VendorCreate} />
           <Stack.Screen name="VendorProductCreate" component={MinimalProductCreate} />
-           <Stack.Screen name="InProgressProducts" component={RequestMoveScreen} />
-          <Stack.Screen name="ViewProducts" component={DraftProduct} />
-          <Stack.Screen name="UnapprovedProducts" component={UnapprovedProduct} />
-
-
-
+          <Stack.Screen name="InProgressProducts" component={RequestMoveScreen} />
+          <Stack.Screen name="NewProducts" component={DraftProduct} />
+          <Stack.Screen name="ApprovalProducts" component={UnapprovedProduct} />
+          <Stack.Screen name="ProductEdit" component={ProductEdit} />
         </Stack.Navigator>
       </View>
     </DrawerLayout >

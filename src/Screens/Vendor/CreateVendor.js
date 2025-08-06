@@ -27,7 +27,7 @@ import states from '../../common/StatesAndDistricts.json';
 import api from '../../service/api';
 const VendorCreate = () => {
     const navigation = useNavigation();
-    const route = useRoute();   
+    const route = useRoute();
     const { isCreateCustomer, isEditCustomer, customerId } = route.params || {};
     const [activeTab, setActiveTab] = useState('General Info');
     const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +45,7 @@ const VendorCreate = () => {
         mobileNumber: '',
         currency: 'INR',
         purchaseType: '',
+        approveStatus: 'DRAFT',
         purchaseMode: '',
         gstType: '',
         gstNumber: '',
@@ -137,7 +138,7 @@ const VendorCreate = () => {
                     isPrimary: true,
                 },
             });
-        } catch (error) { 
+        } catch (error) {
             showError('Failed to fetch vendor data');
         } finally {
             setIsLoading(false);
@@ -305,7 +306,7 @@ const VendorCreate = () => {
             setCustomer(prev => ({
                 ...prev,
                 [key]: value,
-                ...(key === 'gstNumber' && { approveStatus: value ? 'APPROVED' : 'DRAFT' }),
+                // ...(key === 'gstNumber' && { approveStatus: value ? 'APPROVED' : 'DRAFT' }),
             }));
         }
         setErrors(prev => ({ ...prev, [key]: '' }));

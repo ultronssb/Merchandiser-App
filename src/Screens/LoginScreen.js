@@ -47,11 +47,11 @@ const LoginScreen = () => {
     const res = storage.getString('token');
 
     if (res) {
-clearStackAndNavigate();
+      clearStackAndNavigate();
     }
   }, []);
 
-    const clearStackAndNavigate = () => {
+  const clearStackAndNavigate = () => {
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -75,7 +75,7 @@ clearStackAndNavigate();
       const { token } = response?.response;
       storage.set('token', token);
       storage.set('user', JSON.stringify(response?.response));
-
+      console.log(response);
       setIsError({
         message: `Logged in User: ${response?.response?.userId}`,
         heading: response?.message,
@@ -83,7 +83,7 @@ clearStackAndNavigate();
         isLeft: false,
         rightButtonText: 'OK',
         triggerFunction: () => {
-        clearStackAndNavigate();
+          clearStackAndNavigate();
         },
         setShowAlert: () => {
           isError.setShowAlert(false);
@@ -91,8 +91,8 @@ clearStackAndNavigate();
         showAlert: true,
       });
     } catch (error) {
-      const { message } = error;
-      console.error(error);
+      const message = error?.response?.data?.message || error?.message;
+      // console.log(error);
       setIsError({
         message: `Oops: ${message || 'Something went wrong!!!'}`,
         heading: message,
