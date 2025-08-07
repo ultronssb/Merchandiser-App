@@ -66,7 +66,7 @@ const RequestMoveScreen = ({ route }) => {
             const res = await api.get(
                 `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqInfo=${params?.requestInfo}`
             );
-            const newProducts = res.response.content.map((item) => ({
+            const newProducts = res?.response?.content?.map((item) => ({
                 ...item,
                 image: item.vendorImage?.replace('/api', ''),
             }));
@@ -210,8 +210,8 @@ const RequestMoveScreen = ({ route }) => {
                     />
                 }
             >
-                {products.length > 0 ? (
-                    products.map((item, index) => renderCard({ item, index }))
+                {products?.length > 0 ? (
+                    products?.map((item, index) => renderCard({ item, index }))
                 ) : (
                     <Text style={styles.noDataText}>
                         {isLoading ? 'Loading...' : 'No products found'}
