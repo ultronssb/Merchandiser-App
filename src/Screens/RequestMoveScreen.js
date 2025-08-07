@@ -64,11 +64,11 @@ const RequestMoveScreen = ({ route }) => {
         try {
             setIsLoading(true);
             const res = await api.get(
-                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqIsnfo=${params?.requestInfo}`
+                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqInfo=${params?.requestInfo}`
             );
             const newProducts = res.response.content.map((item) => ({
                 ...item,
-                image: item.image?.replace('/api', ''),
+                image: item.vendorImage?.replace('/api', ''),
             }));
             setProducts(newProducts);
             setRowCount(res.response?.totalElements || 0);
