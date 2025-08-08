@@ -16,6 +16,7 @@ export default function PickerMultiSelect({
     selectedItems = [],
     onSelectionsChange,
     placeholder = 'Select items…',
+    disable=false
 }) {
     const [visible, setVisible] = useState(false);
     const [localSelected, setLocalSelected] = useState([]);
@@ -40,7 +41,11 @@ export default function PickerMultiSelect({
         return (
             <TouchableOpacity
                 style={styles.row}
-                onPress={() => toggleItem(item.value)}
+                onPress={() => {
+                     if(disable===true){
+                    return
+                }
+                    toggleItem(item.value)}}
             >
                 <Icon
                     name={checked ? 'check-box' : 'check-box-outline-blank'}
@@ -54,7 +59,11 @@ export default function PickerMultiSelect({
         <>
             <TouchableOpacity
                 style={styles.toggle}
-                onPress={() => setVisible(true)}
+                onPress={() =>{
+                   
+                    setVisible(true)}
+                
+                }
             >
                 <Text style={[
                     styles.toggleText,

@@ -140,12 +140,12 @@ const ProductEdit = ({ route }) => {
         },
         {
             id: '9', name: 'Fabric Type', fieldType: 'categoryField', key: 'productCategories', require: false,
-            placeholder: 'Select Fabric Type', errorMessage: 'productCategories', editableWhen: ['in_progress'],
+            placeholder: 'Select Fabric Type', errorMessage: 'productCategories', editableWhen: ['in_progress','unapproved'],
             viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '10', name: 'Variants', fieldType: 'variantField', key: 'variants', require: false,
-            placeholder: 'Select Variants', errorMessage: 'variants', editableWhen: ['in_progress'],
+            placeholder: 'Select Variants', errorMessage: 'variants', editableWhen: ['in_progress','unapproved'],
             viewableIn: ['in_progress', 'unapproved']
         },
         {
@@ -461,7 +461,7 @@ const ProductEdit = ({ route }) => {
                             productData.otherInformation?.unitOfMeasures?.isMeter ? 'Meter' : 'Yard',
                     imageFile: productData.vendorImage ? { uri: `${backendUrl}${productData?.vendorImage.replace("/api", "")}` } : null,
                     width: productData.metrics?.width || '',
-                    fabricType: fabricTypeCategory ? fabricTypeCategory.name : '',
+                   fabricType: fabricTypeCategory ? fabricTypeCategory.name : '',
                     variants: productData.variants || [],
                     sampleAvailable: productData.sampleAvailable || false,
                     swatchAvailable: productData.swatchAvailable || false,
@@ -1144,6 +1144,7 @@ const ProductEdit = ({ route }) => {
                     }))}
                     placeholder={{ label: 'Select category', value: '' }}
                     style={styles.picker}
+                    disabled={mode==='unapproved'}
                 />
                 {inputError?.categoryErrors?.[index]?.categoryError && (
                     <Text style={styles.errorText}>
@@ -1159,7 +1160,13 @@ const ProductEdit = ({ route }) => {
                             styles.levelInput,
                             { opacity: item.key ? 1 : 0.5 },
                         ]}
-                        onPress={() => item.key && openCategoryModal(index, true)}
+                        onPress={() => {
+                        if(mode==='unapproved'){
+                            return
+                        }    
+                            item.key && openCategoryModal(index, true)
+                    }
+                        }
                         disabled={!item.key}
                     >
                         <TextInput
@@ -1182,6 +1189,7 @@ const ProductEdit = ({ route }) => {
                         selectedItems={selectedValues[item.key] || []}
                         onSelectionsChange={(newSelectedValues) => handleMultiSelectChange(item.key, newSelectedValues)}
                         placeholder="Select categories"
+                        disable={mode==='unapproved'}
                     />
                 )}
                 {inputError?.categoryErrors?.[index]?.categoryError && (
@@ -1332,7 +1340,7 @@ const ProductEdit = ({ route }) => {
                                         scrollEnabled={false}
                                     />
                                     {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
-                                    {totalPercent < 100 && (
+                                    {totalPercent < 100 && mode ==='in_progress'&& (
                                         <TouchableOpacity
                                             onPress={addNewFabricPair}
                                             style={styles.addButton}
@@ -1380,7 +1388,7 @@ const ProductEdit = ({ route }) => {
                                     keyExtractor={(item, index) => index.toString()}
                                     scrollEnabled={false}
                                 />
-                                {_.size(categories) > _.size(categoryPairs) && (
+                                {_.size(categories) > _.size(categoryPairs) && mode ==='in_progress'&& (
                                     <TouchableOpacity style={styles.addButton} onPress={addNewCategoryPair}>
                                         <Icon name="plus" size={20} color="#007bff" />
                                         <Text style={styles.addButtonText}>Add another category</Text>
@@ -1452,7 +1460,7 @@ const ProductEdit = ({ route }) => {
 
     return (
         <ProductContext.Provider value={{
-            product, setProduct, inputError, setInputError
+            product, setProduct, inputError, setInputError,mode
         }}>
             <View style={styles.container}>
                 <ScrollView>

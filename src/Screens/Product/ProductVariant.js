@@ -15,7 +15,7 @@ import api from '../../service/api';
 import { font } from '../../Settings/Theme';
 
 const ProductVariant = () => {
-    const { product, setProduct, inputError, setInputError } = useContext(ProductContext);
+    const { product, setProduct, inputError, setInputError,mode } = useContext(ProductContext);
     const [attributes, setAttributes] = useState({});
     const [selectedPairs, setSelectedPairs] = useState([{ key: '', values: [] }]);
     const [combinations, setCombinations] = useState([]);
@@ -299,6 +299,8 @@ const ProductVariant = () => {
                                     }
                                     placeholder={{ label: 'Select value', value: '' }}
                                     style={styles.picker}
+                                disabled={mode==='unapproved'}
+
                                 />
                             ) : (
                                 <PickerMultiSelect
@@ -314,10 +316,13 @@ const ProductVariant = () => {
                                     selectedItems={pair.values || []}
                                     onSelectionsChange={(values) => handleMultiSelectChange(index, values)}
                                     placeholder="Select values"
+                                                                disable={mode==='unapproved'}
+
+
                                 />
                             )}
-                        </View>
-                        {index > 0 && !existingPairsKeys.includes(pair.key) && (
+                        </View>{console.log(mode)}
+                        {index > 0 && !existingPairsKeys.includes(pair.key) && mode!=='unapproved' &&(
                             <TouchableOpacity
                                 style={styles.removeButton}
                                 onPress={() => removePair(index)}
@@ -327,7 +332,7 @@ const ProductVariant = () => {
                         )}
                     </View>
                 ))}
-                {Object.keys(attributes).length > selectedPairs.length && (
+                {Object.keys(attributes).length > selectedPairs.length && mode!=='unapproved'&&  (
                     <TouchableOpacity style={styles.addButton} onPress={addNewPair}>
                         <Icon name="add" size={20} color="#007bff" />
                         <Text style={styles.addButtonText}>Add another attribute</Text>
@@ -348,12 +353,12 @@ const ProductVariant = () => {
                                 <Text style={styles.variantName} numberOfLines={1} ellipsizeMode="tail">
                                     {variant.name || 'Unnamed Variant'}
                                 </Text>
-                                <TouchableOpacity
+                                {mode!=='unapproved' &&  <TouchableOpacity
                                     style={styles.deleteButton}
                                     onPress={() => removeVariant(index)}
                                 >
                                     <Icon name="delete" size={20} color="#dc3545" />
-                                </TouchableOpacity>
+                                </TouchableOpacity>}
                             </View>
                         ))}
                     </View>
