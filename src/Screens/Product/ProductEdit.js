@@ -1,31 +1,31 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import _ from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    ActivityIndicator,
-    Alert,
-    Image,
-    FlatList,
-    Modal
+    View
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { TouchableRipple } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import axios from 'axios';
-import _ from 'lodash';
-import { useNavigation } from '@react-navigation/native';
 import { backendUrl, common, storage } from '../../common/Common';
-import { font } from '../../Settings/Theme';
-import api from '../../service/api';
-import VendorPicker from '../../common/VendorPicker';
-import PickerSelect from '../../common/PickerSelect';
 import PickerMultiSelect from '../../common/PickerMultiSelect';
+import PickerSelect from '../../common/PickerSelect';
+import VendorPicker from '../../common/VendorPicker';
+import api from '../../service/api';
+import { font } from '../../Settings/Theme';
 import ProductVariant from './ProductVariant';
-import { configureFonts, TouchableRipple } from 'react-native-paper';
 
 export const ProductContext = React.createContext();
 
@@ -168,7 +168,7 @@ const ProductEdit = ({ route }) => {
         }
     ];
 
-    // Fetch initial data
+
     useEffect(() => {
         fetchFabricTypes();
         fetchVariants();
@@ -177,28 +177,28 @@ const ProductEdit = ({ route }) => {
         fetchCategories();
     }, []);
 
-    // Fetch product data when productId and categories are available
+
     useEffect(() => {
         if (productId && categories.length > 0) {
             fetchProduct(productId);
         }
     }, [productId, categories]);
 
-    // Memoize product categories to prevent unnecessary updates
+
     const memoizedProductCategories = useMemo(() => product.productCategories, [product.productCategories]);
     const memoizedProductCategoriesList = useMemo(() => product.productCategoriesList, [product.productCategoriesList]);
 
-    // Synchronize categoryPairs with product and categories
+
     useEffect(() => {
         const mandatoryCategories = categories.filter(cat => cat.isMandatory);
-        // Deep comparison to avoid unnecessary updates
+
         const currentCategoryPairs = JSON.stringify(categoryPairs);
         const newCategoryPairs = JSON.stringify(
             setCategorysAndCategoryPairs(
                 memoizedProductCategories,
                 memoizedProductCategoriesList,
                 mandatoryCategories,
-                true // Return value without setting state
+                true
             )
         );
         if (currentCategoryPairs !== newCategoryPairs) {
@@ -334,7 +334,7 @@ const ProductEdit = ({ route }) => {
             });
         }
 
-        // Add mandatory categories if not already included
+
         mandatoryCategories.forEach(category => {
             if (!uniqueCategoryKeys.has(category.name)) {
                 uniqueCategoryKeys.add(category.name);
@@ -357,7 +357,7 @@ const ProductEdit = ({ route }) => {
         if (formattedCategories.length > 0) {
             formattedCategories.sort((a, b) => (b.isMandatory === true) - (a.isMandatory === true));
             setCategoryPairs(formattedCategories);
-            // Only update product if productCategories has changed
+
             const currentProductCategories = JSON.stringify(product.productCategories);
             const newProductCategories = JSON.stringify(formattedCategories.filter(cat => !cat.multiSelect));
             if (currentProductCategories !== newProductCategories) {
@@ -590,7 +590,7 @@ const ProductEdit = ({ route }) => {
 
         console.log(updatedProduct);
 
-        if (product.imageFile && product.imageFile.uri && !product.imageFile.uri.startsWith(backendUrl)) {
+        if (product.imageFile && product.imageFile.uri && !product.imageFile.uri.startsWith(backendUrl) && mode === 'new') {
             formData.append('image', {
                 uri: product.imageFile.uri,
                 name: product.imageFile.fileName || 'image.jpeg',
@@ -957,7 +957,7 @@ const ProductEdit = ({ route }) => {
                     fabricType: newPairs[index].key === 'Fabric Type' ? cat.name : prev.fabricType,
                     productCategoriesList: [
                         ...prev.productCategoriesList.filter(item => item.productGroupName !== newPairs[index].key),
-                        // ...(newPairs[index].key === 'Fabric Type' ? [{ productGroupName: 'Fabric Type', name: cat.name, id: cat.id }] : []),
+
                     ],
                 }));
             } else {

@@ -8,7 +8,6 @@ export const common = { title: `FabInsta ${mode}`, PRIMARY_COLOR: '#228be6' };
 // export const backendUrl = "https://uat.fabinsta.com/api";
 export const backendUrl = Config.API_URL;
 import { MMKV } from 'react-native-mmkv';
-console.log(Config.APP_MODE, "APP MODE");
 export const storage = new MMKV();
 
 //Merchandiser_V1.1_Dev

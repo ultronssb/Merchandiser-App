@@ -18,7 +18,7 @@ import { backendUrl, common } from '../common/Common';
 import moment from 'moment';
 import { useNavigation } from '@react-navigation/native';
 
-const RequestMoveScreen = ({ route }) => {
+const DraftProduct = ({ route }) => {
     const params = route.params;
     const navigation = useNavigation();
     const [products, setProducts] = useState([]);
@@ -66,7 +66,7 @@ const RequestMoveScreen = ({ route }) => {
             const res = await api.get(
                 `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqInfo=`
             );
-            console.log(res);
+            console.log("draft product");
             const newProducts = res?.response?.content?.map((item) => ({
                 ...item,
                 image: item?.image?.replace('/api', ''),
@@ -74,16 +74,16 @@ const RequestMoveScreen = ({ route }) => {
             setProducts(newProducts);
             setRowCount(res.response?.totalElements || 0);
 
-            // Fetch vendor names for all unique vendorIds
+
             const uniqueVendorIds = [
                 ...new Set(newProducts.map((p) => p.vendorId).filter(Boolean)),
             ];
-            // Wait for all vendor name fetches to complete
+
             await Promise.all(uniqueVendorIds.map((id) => fetchVendorName(id)));
         } catch (error) {
             console.log('Error fetching products:', error?.response || error);
             setIsError({
-                message: 'Failed to fetch product details.',
+                message: error?.response?.data?.message || 'Failed to fetch product details.',
                 heading: 'Error',
                 isRight: false,
                 rightButtonText: 'OK',
@@ -146,7 +146,7 @@ const RequestMoveScreen = ({ route }) => {
                     row.composition || row.fabricContent?.value || 'N/A',
             },
         ],
-        [vendorNames] // Add vendorNames as a dependency
+        [vendorNames]
     );
 
     const renderCard = ({ item, index }) => {
@@ -383,4 +383,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default RequestMoveScreen;
+export default DraftProduct;
