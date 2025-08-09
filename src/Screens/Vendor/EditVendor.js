@@ -17,7 +17,8 @@ import AlertBox from '../../common/AlertBox';
 import { common } from '../../common/Common';
 import api from '../../service/api';
 
-const DisplayVendor = () => {
+const EditVendor = ({ route }) => {
+    const status = route?.params?.status;
     const isInitialLoad = useRef(true);
     const [vendorDetails, setVendorDetails] = useState([]);
     const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 8 });
@@ -48,12 +49,13 @@ const DisplayVendor = () => {
     const getVendor = async () => {
         try {
             setIsLoading(true);
-            const res = await api.get(
-                `vendor/allAgent?page=${pagination.pageIndex}&size=${pagination.pageSize}&search=${encodeURIComponent(searchQuery)}`
-            );
+            const url = status === 'edit' ? `vendor/allAgent?page=${pagination.pageIndex}&size=${pagination.pageSize}&search=${encodeURIComponent(searchQuery)}` :
+                `vendor/getAll?page=${pagination.pageIndex}&pageSize=${pagination.pageSize}&search=${encodeURIComponent(searchQuery)}&status=DRAFT`;
+            const res = await api.get(url);
             setVendorDetails(res?.response?.content || []);
             setRowCount(res.response?.totalElements || 0);
         } catch (error) {
+            console.log(error?.response || error);
             setIsError({
                 message: 'Failed to fetch vendor details.',
                 heading: 'Error',
@@ -120,6 +122,7 @@ const DisplayVendor = () => {
             customerId: vendor.vendorId,
             isEditCustomer: true,
             isCreateCustomer: false,
+            status: status
         });
     };
 
@@ -142,10 +145,15 @@ const DisplayVendor = () => {
                 </View>
             ))}
             <TouchableRipple rippleColor={'rgba(0, 0, 0, .32)'} style={styles.editButton} onPress={() => handleEdit(item)} borderless={true}>
-                <>
+                {status === 'edit' ? <>
                     <Icon name="edit" size={20} color="teal" />
                     <Text style={styles.editButtonText}>Edit</Text>
-                </>
+                </> :
+                    status === "approve" ? <>
+                        <Icon name="check" size={20} color="green" />
+                        <Text style={styles.editButtonText}>Approve</Text>
+                    </> : null
+                }
             </TouchableRipple>
         </View>
     );
@@ -265,8 +273,8 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 20,
         fontFamily: font.bold,
-        color: '#000',alignSelf:'flex-start'
-        ,margin:5
+        color: '#000', alignSelf: 'flex-start'
+        , margin: 5
     },
     headerActions: {
         flexDirection: 'row',
@@ -402,4 +410,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DisplayVendor;
+export default EditVendor;

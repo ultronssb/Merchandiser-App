@@ -16,7 +16,7 @@ export function getpayLoadFromToken() {
 
         // Ensure the token has three parts: header, payload, signature
         if (tokenParts.length !== 3) {
-            console.error('Invalid JWT token format.');
+            console.log('Invalid JWT token format.');
             return {}; // Return empty object if the token is invalid
         }
 
@@ -36,7 +36,7 @@ export function getpayLoadFromToken() {
         return payload;  // Return the decoded payload
     } catch (error) {
         // Log any errors encountered during the process
-        console.error('Error decoding token payload:', error);
+        console.log('Error decoding token payload:', error);
         return {};  // Return an empty object in case of error
     }
 }

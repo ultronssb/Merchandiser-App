@@ -13,6 +13,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    Vibration,
     View
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -39,6 +40,7 @@ const ProductEdit = ({ route }) => {
         vendorUsername: '',
         vendorProductId: '',
         vendorProductName: '',
+        barcode: true,
         gsm: '',
         uom: '',
         imageFile: null,
@@ -71,7 +73,10 @@ const ProductEdit = ({ route }) => {
 
     const [product, setProduct] = useState(initialProductState);
     const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState({
+        submit: false,
+        update: false
+    });
     const [loading, setLoading] = useState(false);
     const [fabricTypes, setFabricTypes] = useState([]);
     const [variantOptions, setVariantOptions] = useState([]);
@@ -92,7 +97,6 @@ const ProductEdit = ({ route }) => {
 
     const uomOptions = [
         { label: 'Kg', value: 'Kg' },
-        { label: 'Roll', value: 'Roll' },
         { label: 'Meter', value: 'Meter' },
         { label: 'Yard', value: 'Yard' }
     ];
@@ -114,7 +118,7 @@ const ProductEdit = ({ route }) => {
             viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
         {
-            id: '4', name: 'GSM', fieldType: 'textField', type: 'number', key: 'gsm', require: false,
+            id: '4', name: 'GSM', fieldType: 'textField', type: 'number', key: 'gsm', require: true,
             placeholder: 'Enter GSM', errorMessage: 'gsm', editableWhen: ['new'],
             viewableIn: ["new", "view", 'in_progress', 'unapproved']
         },
@@ -140,12 +144,12 @@ const ProductEdit = ({ route }) => {
         },
         {
             id: '9', name: 'Fabric Type', fieldType: 'categoryField', key: 'productCategories', require: false,
-            placeholder: 'Select Fabric Type', errorMessage: 'productCategories', editableWhen: ['in_progress','unapproved'],
+            placeholder: 'Select Fabric Type', errorMessage: 'productCategories', editableWhen: ['in_progress', 'unapproved'],
             viewableIn: ['in_progress', 'unapproved']
         },
         {
             id: '10', name: 'Variants', fieldType: 'variantField', key: 'variants', require: false,
-            placeholder: 'Select Variants', errorMessage: 'variants', editableWhen: ['in_progress','unapproved'],
+            placeholder: 'Select Variants', errorMessage: 'variants', editableWhen: ['in_progress', 'unapproved'],
             viewableIn: ['in_progress', 'unapproved']
         },
         {
@@ -456,17 +460,17 @@ const ProductEdit = ({ route }) => {
                     vendorUsername: vendorRes?.response?.username || '',
                     vendorProductId: productData?.vendorProductCode || productData.vendorProductId || '',
                     gsm: productData.metrics?.weight || '',
-                    uom: productData.otherInformation?.unitOfMeasures?.isRoll ? 'Roll' :
+                    uom: productData.otherInformation?.unitOfMeasures?.isYard ? 'Yard' :
                         productData.otherInformation?.unitOfMeasures?.isKg ? 'Kg' :
-                            productData.otherInformation?.unitOfMeasures?.isMeter ? 'Meter' : 'Yard',
+                            productData.otherInformation?.unitOfMeasures?.isMeter ? 'Meter' : 'Roll',
                     imageFile: productData.vendorImage ? { uri: `${backendUrl}${productData?.vendorImage.replace("/api", "")}` } : null,
                     width: productData.metrics?.width || '',
-                   fabricType: fabricTypeCategory ? fabricTypeCategory.name : '',
+                    fabricType: fabricTypeCategory ? fabricTypeCategory.name : '',
                     variants: productData.variants || [],
-                    sampleAvailable: productData.sampleAvailable || false,
-                    swatchAvailable: productData.swatchAvailable || false,
+                    sampleAvailable: productData?.vendorProductInfo?.sampleAvailable || false,
+                    swatchAvailable: productData?.vendorProductInfo?.swatchAvailable || false,
                     coneWeight: productData.otherInformation?.coneWeight || '',
-                    price: productData.price || '',
+                    price: productData?.vendorProductInfo?.costPrice || '',
                     totalProductPercent: Object.values(fabricContent.composition || {}).reduce((acc, val) => acc + val, 0) || 0,
                     fabricContent,
                     productCategories: restoredCats,
@@ -554,9 +558,98 @@ const ProductEdit = ({ route }) => {
             key => !selectedKeys.includes(key) || selectedFabricPairs[currentIndex].key === key
         );
     };
-    const handleSubmit = async () => {
+    const handleSubmit = async (update = false) => {
+        if (mode === 'new') {
+            const newErrors = {};
+
+            if (!product.vendorId || product.vendorId.length === 0) {
+                newErrors.vendorId = 'Vendor is required';
+            }
+
+            if (!product.vendorProductId || product.vendorProductId.length === 0) {
+                newErrors.vendorProductId = 'Vendor Product ID is required';
+            }
+
+            if (!product.vendorProductName || product.vendorProductName.length === 0) {
+                newErrors.vendorProductName = 'Vendor Product Name is required';
+            }
+
+            if (!product.gsm || product.gsm.length === 0) {
+                newErrors.gsm = 'GSM is required';
+            }
+
+            if (!product.uom || product.uom.length === 0) {
+                newErrors.uom = 'UOM is required';
+            }
+
+            if (!product.imageFile) {
+                newErrors.imageFile = 'Image is required';
+            }
+
+            if (Object.keys(newErrors).length > 0) {
+                setErrors(prev => ({ ...prev, ...newErrors }));
+                Vibration.vibrate(100);
+                return;
+            }
+        }
+        if (mode === "in_progress") {
+            const newErrors = {};
+            const categoryErrors = {};
+            if (!product.vendorId) newErrors.vendorId = 'Vendor is required';
+            if (!product.vendorProductId) newErrors.vendorProductId = 'Vendor Product ID is required';
+            if (!product.vendorProductName) newErrors.vendorProductName = 'Vendor Product Name is required';
+            if (!product.gsm) newErrors.gsm = 'GSM is required';
+            if (!product.uom) newErrors.uom = 'UOM is required';
+            if (!product.imageFile) newErrors.imageFile = 'Image is required';
+            if (!product.width) newErrors.width = 'Width is required';
+            if (!product.fabricContent.value || totalPercent !== 100) {
+                newErrors.fabricContent = totalPercent !== 100 ? 'Total fabric content must be 100%.' : 'Composition is required';
+            }
+            if (!product.coneWeight) newErrors.coneWeight = 'Cone Weight is required';
+            if (!product.price) newErrors.price = 'Price is required';
+            if (product.newProductVariants.length === 0) newErrors.variants = 'At least one variant is required';
+            console.log(product);
+            categoryPairs.forEach((cat, index) => {
+                let hasError = false;
+                let errorMessage = '';
+                if (cat.isMandatory) {
+                    if (cat.multiSelect) {
+                        if (!selectedValues[cat.key] || selectedValues[cat.key].length === 0) {
+                            hasError = true;
+                            errorMessage = `${cat.key} is required`;
+                        }
+                    } else {
+                        if (!cat.value || !cat.value.id) {
+                            hasError = true;
+                            errorMessage = `${cat.key} is required`;
+                        }
+                    }
+                }
+                if (hasError) {
+                    categoryErrors[index] = { categoryError: true, categoryErrorMessage: errorMessage };
+                }
+            });
+
+            if (Object.keys(categoryErrors).length > 0) {
+                setInputError({ categoryErrors });
+            }
+
+            if (Object.keys(newErrors).length > 0) {
+                setErrors(newErrors);
+                Vibration.vibrate(100);
+                return;
+            }
+
+            if (Object.keys(categoryErrors).length > 0) {
+                Vibration.vibrate(100);
+                return;
+            }
+        }
         const token = storage.getString('token');
-        setIsSubmitting(true);
+        setIsSubmitting({
+            submit: update === false,
+            update: update === true
+        });
         setLoading(true);
 
         const formData = new FormData();
@@ -573,6 +666,15 @@ const ProductEdit = ({ route }) => {
                     return acc;
                 }, {}),
             productVariants: product?.newProductVariants || [],
+            otherInformation: {
+                ...product.otherInformation,
+                coneWeight: product.coneWeight || '',
+                unitOfMeasures: {
+                    isKg: product.uom === 'Kg',
+                    isMeter: product.uom === 'Meter',
+                    isYard: product.uom === 'Yard'
+                }
+            },
             metrics: {
                 ...product.metrics,
                 weight: product.gsm,
@@ -584,11 +686,9 @@ const ProductEdit = ({ route }) => {
                 costPrice: product.price || '',
                 swatchAvailable: product.swatchAvailable || false,
                 sampleAvailable: product.sampleAvailable || false,
-                coneWeight: product.coneWeight || '',
             }
         };
 
-        console.log(updatedProduct);
 
         if (product.imageFile && product.imageFile.uri && !product.imageFile.uri.startsWith(backendUrl) && mode === 'new') {
             formData.append('image', {
@@ -599,9 +699,10 @@ const ProductEdit = ({ route }) => {
         }
 
         formData.append('product', JSON.stringify(updatedProduct));
-
+        console.log(updatedProduct);
         try {
-            await axios.post(`${backendUrl}/draftProduct`, formData, {
+            const url = update ? `${backendUrl}/draftProduct/updateUnApproved` : `${backendUrl}/draftProduct`;
+            await axios.post(url, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` },
             });
             Alert.alert('Success', 'Product created successfully', [{ text: 'OK', onPress: () => navigation.goBack() }]);
@@ -613,7 +714,10 @@ const ProductEdit = ({ route }) => {
             console.log(error?.response || error);
             Alert.alert('Error', 'Failed to create product: ' + (error.message || 'Unknown error'));
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting({
+                submit: false,
+                update: false
+            });
             setLoading(false);
         }
     };
@@ -1120,7 +1224,7 @@ const ProductEdit = ({ route }) => {
                     size={20}
                     style={styles.percentIcon}
                 />
-                {index > 0 && (
+                {index > 0 && mode === "in_progress" && (
                     <TouchableOpacity
                         onPress={() => removeFabricPair(index)}
                         style={styles.deleteButton}
@@ -1144,7 +1248,7 @@ const ProductEdit = ({ route }) => {
                     }))}
                     placeholder={{ label: 'Select category', value: '' }}
                     style={styles.picker}
-                    disabled={mode==='unapproved'}
+                    disabled={mode === 'unapproved'}
                 />
                 {inputError?.categoryErrors?.[index]?.categoryError && (
                     <Text style={styles.errorText}>
@@ -1161,11 +1265,11 @@ const ProductEdit = ({ route }) => {
                             { opacity: item.key ? 1 : 0.5 },
                         ]}
                         onPress={() => {
-                        if(mode==='unapproved'){
-                            return
-                        }    
-                            item.key && openCategoryModal(index, true)
-                    }
+                            if (mode === 'unapproved') {
+                                return;
+                            }
+                            item.key && openCategoryModal(index, true);
+                        }
                         }
                         disabled={!item.key}
                     >
@@ -1189,7 +1293,7 @@ const ProductEdit = ({ route }) => {
                         selectedItems={selectedValues[item.key] || []}
                         onSelectionsChange={(newSelectedValues) => handleMultiSelectChange(item.key, newSelectedValues)}
                         placeholder="Select categories"
-                        disable={mode==='unapproved'}
+                        disable={mode === 'unapproved'}
                     />
                 )}
                 {inputError?.categoryErrors?.[index]?.categoryError && (
@@ -1199,16 +1303,16 @@ const ProductEdit = ({ route }) => {
                     </Text>
                 )}
             </View>
-            <View style={styles.actionColumn}>
-                {index > 0 && item.key !== 'Fabric Type' && !item.isMandatory && (
+            {index > 0 && item.key !== 'Fabric Type' && !item.isMandatory && mode === 'in_progress' && (
+                <View style={styles.actionColumn}>
                     <TouchableOpacity
                         style={styles.removeButton}
                         onPress={() => removeCategoryPair(index, item.key)}
                     >
                         <Icon name="trash" size={20} color="#dc3545" />
                     </TouchableOpacity>
-                )}
-            </View>
+                </View>
+            )}
         </View>
     );
 
@@ -1253,17 +1357,27 @@ const ProductEdit = ({ route }) => {
                         </Text>
                         <TextInput
                             style={[styles.input, !isEditableField && styles.disabledInput, errors[field.errorMessage] && { borderColor: 'red' }]}
-                            value={value ? value.toString() : ''}
-                            onChangeText={(val) => handleChange(val, field.key)}
-                            placeholder={field.placeholder}
-                            keyboardType={field.type === 'number' ? 'numeric' : 'default'}
+                            value={field.key === 'coneWeight' && value ? (value * 1000).toString() : value ? value.toString() : ''}
+                            onChangeText={(val) => {
+                                if (field.key === 'coneWeight') {
+                                    const kgValue = val ? (parseFloat(val) / 1000).toString() : '';
+                                    handleChange(kgValue, field.key);
+                                } else {
+                                    handleChange(val, field.key);
+                                }
+                            }}
+                            placeholder={field.key === 'coneWeight' ? `${field.placeholder} (in grams)` : field.placeholder}
+                            keyboardType={field.type === 'number' || field.key === 'coneWeight' ? 'numeric' : 'default'}
                             editable={isEditableField}
                             placeholderTextColor="#999"
                         />
+
+                        {field.key === 'coneWeight' && value && (
+                            <Text style={styles.unitText}>Value in kg: {value} kg</Text>
+                        )}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
                     </View>
                 );
-
             case 'radio':
                 return (
                     <View key={field.id} style={styles.formGroup}>
@@ -1295,7 +1409,7 @@ const ProductEdit = ({ route }) => {
                                 </Text>
                             </TouchableOpacity>
                         )}
-                        {value ? <Image source={{ uri }} style={styles.image} /> : <View style={styles.image} />}
+                        {value ? <Image source={{ uri, cache: 'reload' }} style={styles.image} /> : <TouchableOpacity style={styles.image} onPress={handleImagePick} />}
                         {errors[field.errorMessage] && <Text style={styles.errorText}>{errors[field.errorMessage]}</Text>}
                     </View>
                 );
@@ -1340,7 +1454,7 @@ const ProductEdit = ({ route }) => {
                                         scrollEnabled={false}
                                     />
                                     {errors[field.key] && <Text style={styles.errorText}>{errors[field.key]}</Text>}
-                                    {totalPercent < 100 && mode ==='in_progress'&& (
+                                    {totalPercent < 100 && mode === 'in_progress' && (
                                         <TouchableOpacity
                                             onPress={addNewFabricPair}
                                             style={styles.addButton}
@@ -1388,7 +1502,7 @@ const ProductEdit = ({ route }) => {
                                     keyExtractor={(item, index) => index.toString()}
                                     scrollEnabled={false}
                                 />
-                                {_.size(categories) > _.size(categoryPairs) && mode ==='in_progress'&& (
+                                {_.size(categories) > _.size(categoryPairs) && mode === 'in_progress' && (
                                     <TouchableOpacity style={styles.addButton} onPress={addNewCategoryPair}>
                                         <Icon name="plus" size={20} color="#007bff" />
                                         <Text style={styles.addButtonText}>Add another category</Text>
@@ -1460,7 +1574,7 @@ const ProductEdit = ({ route }) => {
 
     return (
         <ProductContext.Provider value={{
-            product, setProduct, inputError, setInputError,mode
+            product, setProduct, inputError, setInputError, mode
         }}>
             <View style={styles.container}>
                 <ScrollView>
@@ -1469,26 +1583,26 @@ const ProductEdit = ({ route }) => {
                         {(mode === 'new' || mode === 'in_progress') && (
                             <TouchableRipple
                                 style={styles.submitButton}
-                                onPress={handleSubmit}
-                                disabled={isSubmitting}
+                                onPress={() => handleSubmit(false)}
+                                disabled={isSubmitting.submit}
                                 rippleColor={'rgba(0, 0, 0, .32)'}
                                 borderless={true}
                             >
                                 <Text style={styles.submitButtonText}>
-                                    {isSubmitting ? 'Submitting...' : productId ? 'Update Product' : 'Create Product'}
+                                    {isSubmitting.submit ? 'Submitting...' : productId ? 'Update Product' : 'Create Product'}
                                 </Text>
                             </TouchableRipple>
                         )}
                         {(mode === 'in_progress') && (
                             <TouchableRipple
                                 style={[styles.submitButton, { backgroundColor: "#fff" }]}
-                                onPress={handleRequestInfo}
-                                disabled={isSubmitting}
+                                onPress={() => handleSubmit(true)}
+                                disabled={isSubmitting.update}
                                 borderless={true}
                                 rippleColor={'rgba(0, 0, 0, .32)'}
                             >
                                 <Text style={[styles.submitButtonText, { color: common.PRIMARY_COLOR }]}>
-                                    Request Info
+                                    {isSubmitting.update ? "Submitting..." : "Update & Approval"}
                                 </Text>
                             </TouchableRipple>
                         )}
@@ -1609,9 +1723,13 @@ const styles = StyleSheet.create({
     },
     disabledText: {
         color: '#888',
+    }, unitText: {
+        fontSize: 12,
+        fontFamily: font.semiBold,
+        color: 'green',
     },
     imageButton: {
-        backgroundColor: '#e9ecef',
+        backgroundColor: common.PRIMARY_COLOR,
         padding: 12,
         borderRadius: 4,
         alignItems: 'center',
@@ -1619,8 +1737,8 @@ const styles = StyleSheet.create({
     },
     imageButtonText: {
         fontSize: 16,
-        fontFamily: font.regular,
-        color: '#333',
+        fontFamily: font.semiBold,
+        color: '#fff',
     },
     image: {
         width: 200,
@@ -1680,7 +1798,7 @@ const styles = StyleSheet.create({
     },
     errorText: {
         color: 'red',
-        fontSize: 14,
+        fontSize: 12,
         marginTop: 5,
         fontFamily: font.semiBold,
     },

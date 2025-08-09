@@ -15,7 +15,7 @@ import api from '../../service/api';
 import { font } from '../../Settings/Theme';
 
 const ProductVariant = () => {
-    const { product, setProduct, inputError, setInputError,mode } = useContext(ProductContext);
+    const { product, setProduct, inputError, setInputError, mode } = useContext(ProductContext);
     const [attributes, setAttributes] = useState({});
     const [selectedPairs, setSelectedPairs] = useState([{ key: '', values: [] }]);
     const [combinations, setCombinations] = useState([]);
@@ -60,7 +60,7 @@ const ProductVariant = () => {
                 }));
                 setSelectedPairs(initialPairs.length > 0 ? initialPairs : [{ key: '', values: [] }]);
             } catch (error) {
-                console.error('Error initializing selectedPairs:', error);
+                console.log('Error initializing selectedPairs:', error);
                 setExistingPairs({});
                 setExistingPairsKeys([]);
                 setSelectedPairs([{ key: '', values: [] }]);
@@ -165,7 +165,7 @@ const ProductVariant = () => {
             setAttributes(groupedVariants);
             setVariants(response.response || []);
         } catch (error) {
-            console.error('Error fetching variants:', error);
+            console.log('Error fetching variants:', error);
             setAttributes({});
             setVariants([]);
         }
@@ -299,7 +299,7 @@ const ProductVariant = () => {
                                     }
                                     placeholder={{ label: 'Select value', value: '' }}
                                     style={styles.picker}
-                                disabled={mode==='unapproved'}
+                                    disabled={mode === 'unapproved'}
 
                                 />
                             ) : (
@@ -316,13 +316,13 @@ const ProductVariant = () => {
                                     selectedItems={pair.values || []}
                                     onSelectionsChange={(values) => handleMultiSelectChange(index, values)}
                                     placeholder="Select values"
-                                                                disable={mode==='unapproved'}
+                                    disable={mode === 'unapproved'}
 
 
                                 />
                             )}
-                        </View>{console.log(mode)}
-                        {index > 0 && !existingPairsKeys.includes(pair.key) && mode!=='unapproved' &&(
+                        </View>
+                        {index > 0 && !existingPairsKeys.includes(pair.key) && mode !== 'unapproved' && (
                             <TouchableOpacity
                                 style={styles.removeButton}
                                 onPress={() => removePair(index)}
@@ -332,7 +332,7 @@ const ProductVariant = () => {
                         )}
                     </View>
                 ))}
-                {Object.keys(attributes).length > selectedPairs.length && mode!=='unapproved'&&  (
+                {Object.keys(attributes).length > selectedPairs.length && mode !== 'unapproved' && (
                     <TouchableOpacity style={styles.addButton} onPress={addNewPair}>
                         <Icon name="add" size={20} color="#007bff" />
                         <Text style={styles.addButtonText}>Add another attribute</Text>
@@ -353,7 +353,7 @@ const ProductVariant = () => {
                                 <Text style={styles.variantName} numberOfLines={1} ellipsizeMode="tail">
                                     {variant.name || 'Unnamed Variant'}
                                 </Text>
-                                {mode!=='unapproved' &&  <TouchableOpacity
+                                {mode !== 'unapproved' && <TouchableOpacity
                                     style={styles.deleteButton}
                                     onPress={() => removeVariant(index)}
                                 >
@@ -379,7 +379,6 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 24,
         backgroundColor: '#fff',
-        padding: 16,
         borderRadius: 8,
     },
     attributeHeader: {

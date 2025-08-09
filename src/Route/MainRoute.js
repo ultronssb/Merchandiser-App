@@ -10,15 +10,16 @@ import CustomDrawer from '../common/DrawerContent';
 import DraftProduct from '../Screens/DraftProduct';
 import HomeScreen from '../Screens/HomeScreen';
 import LoginScreen from '../Screens/LoginScreen';
-import MinimalProductCreate from '../Screens/Product/VendorMapProduct';
 import RequestMoveScreen from '../Screens/RequestMoveScreen';
 import UnapprovedProduct from '../Screens/UnapprovedProduct';
 import VendorCreate from '../Screens/Vendor/CreateVendor';
-import DisplayVendor from '../Screens/Vendor/DisplayVendor';
+
 import api from '../service/api';
 import LogoutHandler from '../service/LogoutHandler';
 import { font } from '../Settings/Theme';
 import ProductEdit from '../Screens/Product/ProductEdit';
+import MinimalProductCreate from '../Screens/Product/VendorMapProduct';
+import EditVendor from '../Screens/Vendor/EditVendor';
 
 const screenWidth = Dimensions.get('window').width;
 const isLargeScreen = screenWidth > 768;
@@ -37,14 +38,16 @@ const CustomHeader = () => {
       .replace("Screen", "");
   };
 
-  const title = route.params?.isEditCustomer === true ?
-    "Edit Vendor" : route.params?.isCreateCustomer === true ? "Create Vendor"
-      : route?.name === "DisplayVendor" ? "Vendor Details" : route?.name === 'DisplayProduct' ? "Products"
-        : route?.name === "VendorProductCreate" ? "Create Product" : route?.params?.statusProduct === "new" ? "Create Product"
-          : route?.params?.statusProduct === "in_progress" ? "In-Progress Product"
-            : route?.params?.statusProduct === "unapproved" ? "Approval Product"
-              : route?.params?.statusProduct === "view" ? "New Product"
-                : formatRouteName(route.name);
+  const title = route.params?.isCreateCustomer === true ? "Create Vendor"
+    // : route?.name === "EditVendor" ? "Vendor Details"
+    : route?.name === 'DisplayProduct' ? "Products"
+      : route?.name === "VendorProductCreate" ? "Create Product" : route?.params?.statusProduct === "new" ? "Create Product"
+        : route?.params?.statusProduct === "in_progress" ? "In-Progress Product"
+          : route?.params?.statusProduct === "unapproved" ? "Approval Product"
+            : route?.params?.statusProduct === "view" ? "New Product"
+              : route?.params?.status === "edit" ? "Edit Vendor"
+                : route?.params?.status === "approve" ? "Approve Vendor"
+                  : formatRouteName(route.name);
 
   return (
     <View style={styles.header}>
@@ -165,11 +168,25 @@ const MainStack = () => {
     {
       order: 1,
       displayOrder: 1,
-      label: 'View Vendor',
+      label: 'Edit Vendor',
       onPress: () => {
         closeDrawer();
         setTimeout(() => {
-          navigation.navigate("DisplayVendor");
+          navigation.navigate("EditVendor", {
+            status: 'edit'
+          });
+        }, 100);
+      },
+    }, {
+      order: 1,
+      displayOrder: 1,
+      label: 'Approve Vendor',
+      onPress: () => {
+        closeDrawer();
+        setTimeout(() => {
+          navigation.navigate("EditVendor", {
+            status: 'approve'
+          });
         }, 100);
       },
     }, {
@@ -257,7 +274,7 @@ const MainStack = () => {
           />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Logout" component={LogoutHandler} />
-          <Stack.Screen name="DisplayVendor" component={DisplayVendor} />
+          <Stack.Screen name="EditVendor" component={EditVendor} />
           <Stack.Screen name="VendorCreate" component={VendorCreate} />
           <Stack.Screen name="VendorProductCreate" component={MinimalProductCreate} />
           <Stack.Screen name="InProgressProducts" component={RequestMoveScreen} />

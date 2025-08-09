@@ -28,16 +28,16 @@ import api from '../../service/api';
 const VendorCreate = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { isCreateCustomer, isEditCustomer, customerId } = route.params || {};
+    const { isCreateCustomer, isEditCustomer, customerId, status } = route.params || {};
     const [activeTab, setActiveTab] = useState('General Info');
     const [isLoading, setIsLoading] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [cities, setCities] = useState([]);
+    const [profile, setProfile] = useState({});
     const [region, setRegion] = useState([]);
     const [errors, setErrors] = useState({});
     const [passwordVisible, setPasswordVisible] = useState(false);
 
-    // Initialize customer state
     const [customer, setCustomer] = useState({
         supplier: '',
         email: '',
@@ -45,7 +45,7 @@ const VendorCreate = () => {
         mobileNumber: '',
         currency: 'INR',
         purchaseType: '',
-        approveStatus: 'DRAFT',
+        approveStatus: '',
         purchaseMode: '',
         gstType: '',
         gstNumber: '',
@@ -87,7 +87,7 @@ const VendorCreate = () => {
         },
     });
 
-    // Initialize address state
+
     const [address, setAddress] = useState({
         nickName: '',
         address1: '',
@@ -120,9 +120,10 @@ const VendorCreate = () => {
             fetchAddressData();
         }
         fetchRegion();
+        fetchProfile();
     }, [customerId]);
 
-    // Fetch vendor data
+
     const fetchCustomerData = async () => {
         try {
             setIsLoading(true);
@@ -145,7 +146,7 @@ const VendorCreate = () => {
         }
     };
 
-    // Fetch address data
+
     const fetchAddressData = async () => {
         try {
             const locationRes = await api.get(`vendorLocations?vendorId=${customerId}`);
@@ -159,7 +160,7 @@ const VendorCreate = () => {
         }
     };
 
-    // Fetch regions
+
     const fetchRegion = async () => {
         try {
             const res = await api.get(`region`);
@@ -170,37 +171,17 @@ const VendorCreate = () => {
         }
     };
 
-    // Download file
-    // const downloadFile = async (filePath) => {
-    //     if (!filePath) {
-    //         showError('No file to download');
-    //         return;
-    //     }
-
-    //     try {
-    //         setIsLoading(true);
-    //         const token = storage.getString('token');
-    //         const res = await ReactNativeBlobUtil.config({
-    //             fileCache: true,
-    //             appendExt: filePath.split('.').pop(),
-    //         }).fetch('GET', `${backendUrl}/vendor/download?filePath=${encodeURIComponent(filePath)}`, {
-    //             Authorization: `Bearer ${token}`,
-    //         });
-
-    //         const fileName = filePath.split('/').pop();
-    //         const path = `${ReactNativeBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
-    //         await ReactNativeBlobUtil.fs.mv(res.path(), path);
-    //         showSuccess(`File downloaded to ${path}`);
-    //     } catch (error) {
-    //         console.log(error);
-    //         showError(error.message || 'Failed to download file');
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-    // Download file
-
+    const fetchProfile = async () => {
+        const rawUser = storage.getString("user");
+        const userId = JSON.parse(rawUser)?.userId;
+        try {
+            const res = await api.get(`user/${userId}`);
+            const data = res.response;
+            setProfile(data);
+        } catch (error) {
+            showError('Failed to fetch profile data');
+        }
+    };
     const requestStoragePermission = async () => {
         try {
             const granted = await PermissionsAndroid.requestMultiple([
@@ -226,11 +207,11 @@ const VendorCreate = () => {
             setIsLoading(true);
             const token = storage.getString('token');
             const fileName = filePath.split('/').pop();
-            const downloadDest = `${RNFS.DownloadDirectoryPath}/${fileName}`; // For Android
-            // For iOS, you can use RNFS.DocumentDirectoryPath or RNFS.LibraryDirectoryPath
-            // const downloadDest = `${RNFS.DocumentDirectoryPath}/${fileName}`; // For iOS
+            const downloadDest = `${RNFS.DownloadDirectoryPath}/${fileName}`;
 
-            // Request permissions for Android
+
+
+
             const hasPermission = await requestStoragePermission();
             if (!hasPermission) {
                 showError('Storage permission denied');
@@ -243,8 +224,8 @@ const VendorCreate = () => {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                background: true, // Allows download to continue in the background
-                discretionary: true, // Optimizes for battery and network
+                background: true,
+                discretionary: true,
             }).promise;
 
             if (response.statusCode === 200) {
@@ -262,7 +243,7 @@ const VendorCreate = () => {
         }
     };
 
-    // Show error alert
+
     const showError = (message) => {
         setIsError({
             message,
@@ -274,7 +255,7 @@ const VendorCreate = () => {
         });
     };
 
-    // Show success message
+
     const showSuccess = (message, onConfirm = () => { }) => {
         setIsError({
             message,
@@ -286,12 +267,12 @@ const VendorCreate = () => {
         });
     };
 
-    // Close alert
+
     const closeAlert = () => {
         setIsError(prev => ({ ...prev, showAlert: false }));
     };
 
-    // Handle form changes
+
     const handleChange = (value, key) => {
         if (key.includes('.')) {
             const [parent, child] = key.split('.');
@@ -306,13 +287,13 @@ const VendorCreate = () => {
             setCustomer(prev => ({
                 ...prev,
                 [key]: value,
-                // ...(key === 'gstNumber' && { approveStatus: value ? 'APPROVED' : 'DRAFT' }),
+
             }));
         }
         setErrors(prev => ({ ...prev, [key]: '' }));
     };
 
-    // Handle image selection
+
     const handleImagePick = (key) => {
         launchImageLibrary({ mediaType: 'photo' }, (response) => {
             if (response.didCancel) return;
@@ -330,18 +311,18 @@ const VendorCreate = () => {
         });
     };
 
-    // Remove image
+
     const handleRemoveImage = (key) => {
         setCustomer(prev => ({ ...prev, [key]: null }));
     };
 
-    // Handle address changes
+
     const handleAddressChange = (value, key) => {
         setAddress(prev => ({ ...prev, [key]: value }));
         setErrors(prev => ({ ...prev, [key]: '' }));
     };
 
-    // Handle state selection
+
     const handleStateChange = (value) => {
         setCustomer(prev => ({
             ...prev,
@@ -355,7 +336,7 @@ const VendorCreate = () => {
         }));
     };
 
-    // Handle address state selection
+
     const handleAddressStateChange = (value) => {
         setAddress(prev => ({
             ...prev,
@@ -366,7 +347,7 @@ const VendorCreate = () => {
         setErrors(prev => ({ ...prev, state: '', city: '' }));
     };
 
-    // Handle city selection
+
     const handleAddressCityChange = (value) => {
         setAddress(prev => ({
             ...prev,
@@ -375,7 +356,7 @@ const VendorCreate = () => {
         setErrors(prev => ({ ...prev, city: '' }));
     };
 
-    // Validate form fields
+
     const validateFields = () => {
         let tempErrors = {};
         if (!customer.supplier) tempErrors.supplier = 'Company Name is required';
@@ -388,84 +369,18 @@ const VendorCreate = () => {
         if (customer.gstType !== 'Un Registered' && !customer.gstNumber)
             tempErrors.gstNumber = 'GST No. is required';
         if (!customer.regionId) tempErrors.regionId = 'Region is required';
-        if (addresses.length === 0) {
-            if (!customer.locations.address1) tempErrors['locations.address1'] = 'Address 1 is required';
-            if (!customer.locations.state) tempErrors['locations.state'] = 'State is required';
-            if (!customer.locations.city) tempErrors['locations.city'] = 'City is required';
-            if (!customer.locations.pincode) tempErrors['locations.pincode'] = 'Pin Code is required';
-        }
+        // if (addresses.length === 0) {
+        //     if (!customer.locations.address1) tempErrors['locations.address1'] = 'Address 1 is required';
+        //     if (!customer.locations.state) tempErrors['locations.state'] = 'State is required';
+        //     if (!customer.locations.city) tempErrors['locations.city'] = 'City is required';
+        //     if (!customer.locations.pincode) tempErrors['locations.pincode'] = 'Pin Code is required';
+        // }
 
         setErrors(tempErrors);
         return Object.keys(tempErrors).length === 0;
     };
+    console.log(profile);
 
-    // Save vendor
-    // const handleSave = async () => {
-    //     if (!validateFields()) {
-    //         Vibration.vibrate(100);
-    //         showError('Please fix validation errors');
-    //         return;
-    //     }
-
-    //     try {
-    //         setIsLoading(true);
-    //         const token = storage.getString('token');
-    //         const formData = new FormData();
-    //         const customerClone = { ...customer };
-
-    //         // Handle image uploads
-    //         const imageFields = ['gst', 'pan', 'msme', 'cancel'];
-    //         imageFields.forEach((field) => {
-    //             if (customerClone[field]?.uri) {
-    //                 formData.append(field, {
-    //                     uri: customerClone[field].uri,
-    //                     name: customerClone[field].fileName || `${field}.jpg`,
-    //                     type: customerClone[field].type || 'image/jpeg',
-    //                 });
-    //                 delete customerClone[field];
-    //             }
-    //         });
-
-    //         // Create vendorDto file
-    //         const vendorDtoPath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/vendorDto.json`;
-    //         await ReactNativeBlobUtil.fs.writeFile(vendorDtoPath, JSON.stringify(customerClone), 'utf8');
-    //         formData.append('vendorDto', {
-    //             uri: `file://${vendorDtoPath}`,
-    //             name: 'vendorDto.json',
-    //             type: 'application/json',
-    //         });
-
-    //         // Send request
-    //         const response = await axios.post(
-    //             `${backendUrl}/vendor/save`,
-    //             formData,
-    //             {
-    //                 headers: {
-    //                     'Content-Type': 'multipart/form-data',
-    //                     Authorization: `Bearer ${token}`,
-    //                 },
-    //                 timeout: 30000,
-    //             }
-    //         );
-
-    //         if (response.data?.response?.id) {
-    //             await ReactNativeBlobUtil.fs.unlink(vendorDtoPath);
-    //             showSuccess('Vendor saved successfully', () => {
-    //                 navigation.navigate('Vendor', { ...route.params });
-    //             });
-    //         } else {
-    //             await ReactNativeBlobUtil.fs.unlink(vendorDtoPath);
-    //             showError(response.data?.message || 'Failed to save vendor');
-    //         }
-    //     } catch (error) {
-    //         showError(error.response?.data?.title || error.message || 'An error occurred');
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-    // ... (other imports and code remain unchanged)
-
-    // Inside VendorCreate component, replace the handleSave function with this:
     const handleSave = async () => {
         if (!validateFields()) {
             Vibration.vibrate(100);
@@ -479,7 +394,8 @@ const VendorCreate = () => {
             const formData = new FormData();
             const customerClone = { ...customer };
 
-            // Check if address fields are empty
+            customerClone.approveStatus = customer.approveStatus === 'APPROVED' ? 'APPROVED' : status === 'approve' ? 'APPROVED' : 'DRAFT';
+
             const isAddressEmpty =
                 !customerClone.locations.address1 &&
                 !customerClone.locations.state &&
@@ -491,10 +407,10 @@ const VendorCreate = () => {
                 !customerClone.locations.gstNo &&
                 !customerClone.locations.regionId;
 
-            // Remove locations if empty and no addresses exist
-            // if (isAddressEmpty && addresses.length === 0) {
-            //     delete customerClone.locations;
-            // }
+
+
+
+
             const hasLocationData =
                 customerClone.locations.address1 ||
                 customerClone.locations.address2 ||
@@ -503,9 +419,12 @@ const VendorCreate = () => {
                 customerClone.locations.pincode;
 
             if (!hasLocationData) {
-                customerClone.locations = null; // Set locations to null if no data
+                customerClone.locations = null;
             }
-            // Handle image uploads
+            if (customerClone.approveStatus === 'APPROVED') {
+                customerClone.approveStatus = 'APPROVED';
+
+            }
             const imageFields = ['gst', 'pan', 'msme', 'cancel'];
             imageFields.forEach((field) => {
                 if (customerClone[field]?.uri) {
@@ -518,7 +437,11 @@ const VendorCreate = () => {
                 }
             });
 
-            // Create vendorDto file
+            if (isCreateCustomer) {
+                customerClone.assignedBuyer = profile?.userId || '';
+                customerClone.buyerName = profile?.firstName + ' ' + profile?.lastName || '';
+            }
+
             const vendorDtoPath = `${ReactNativeBlobUtil.fs.dirs.CacheDir}/vendorDto.json`;
             await ReactNativeBlobUtil.fs.writeFile(vendorDtoPath, JSON.stringify(customerClone), 'utf8');
             formData.append('vendorDto', {
@@ -527,7 +450,7 @@ const VendorCreate = () => {
                 type: 'application/json',
             });
 
-            // Send request
+
             const response = await axios.post(
                 `${backendUrl}/vendor/save`,
                 formData,
@@ -556,8 +479,8 @@ const VendorCreate = () => {
         }
     };
 
-    // ... (rest of the component code remains unchanged)
-    // Save address
+
+
     const handleSaveAddress = async () => {
         let tempErrors = {};
         if (!address.address1) tempErrors.address1 = 'Address 1 is required';
@@ -605,7 +528,7 @@ const VendorCreate = () => {
         }
     };
 
-    // Set primary address
+
     const handleSelectPrimaryAddress = async (id) => {
         try {
             const updatedAddresses = addresses.map(addr => ({
@@ -623,19 +546,19 @@ const VendorCreate = () => {
         }
     };
 
-    // Edit address
+
     const handleEditAddress = (addr) => {
         setAddress(addr);
         setCities(states[addr?.state] || []);
         setIsModalVisible(true);
     };
 
-    // Toggle password visibility
+
     const handleTogglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
     };
 
-    // Navigation handlers
+
     const handleCancel = () => {
         navigation.goBack();
     };
@@ -656,9 +579,9 @@ const VendorCreate = () => {
         }
     };
 
-    // Form field configurations
+
     const customerFields = [
-        // General Info
+
         { id: 1, name: 'Company Name', category: 'General Info', fieldType: 'text', key: 'supplier', required: true },
         { id: 2, name: 'Email', category: 'General Info', fieldType: 'text', key: 'email', required: true },
         ...(isCreateCustomer ? [
@@ -701,7 +624,7 @@ const VendorCreate = () => {
         { id: 17, name: 'PAN Card Copy', category: 'General Info', fieldType: 'file', key: 'pan', button: customer.panDocumentPath && { label: 'View File', onClick: () => downloadFile(customer.panDocumentPath) } },
         { id: 18, name: 'MSME Certificate', category: 'General Info', fieldType: 'file', key: 'msme', button: customer.msmeDocumentPath && { label: 'View File', onClick: () => downloadFile(customer.msmeDocumentPath) } },
 
-        // Contact Info
+
         { id: 19, name: 'Contact Person Name', category: 'Contact Info', fieldType: 'text', key: 'contactPerson' },
         { id: 20, name: 'Designation', category: 'Contact Info', fieldType: 'text', key: 'designation' },
         { id: 21, name: 'Mobile Number', category: 'Contact Info', fieldType: 'text', key: 'contactPersonPhoneNo' },
@@ -709,7 +632,7 @@ const VendorCreate = () => {
         { id: 23, name: 'Email', category: 'Contact Info', fieldType: 'text', key: 'contactPersonEmail', required: true },
         { id: 24, name: 'Alternate Email', category: 'Contact Info', fieldType: 'text', key: 'contactPersonAlternativeEmail' },
 
-        // Bank Info
+
         { id: 25, name: 'Bank Name', category: 'Bank Info', fieldType: 'text', key: 'bankName' },
         { id: 26, name: 'Branch Name', category: 'Bank Info', fieldType: 'text', key: 'branchName' },
         { id: 27, name: 'Account Holder', category: 'Bank Info', fieldType: 'text', key: 'accountHolderName', required: true },
@@ -717,7 +640,7 @@ const VendorCreate = () => {
         { id: 29, name: 'IFSC Code', category: 'Bank Info', fieldType: 'text', key: 'ifscCode' },
         { id: 30, name: 'Cancelled Check', category: 'Bank Info', fieldType: 'file', key: 'cancel', button: customer.cancelDocumentPath && { label: 'View File', onClick: () => downloadFile(customer.cancelDocumentPath) } },
 
-        // Address (for initial form when no addresses exist)
+
         { id: 31, name: 'Address 1', category: 'Address', fieldType: 'text', key: 'locations.address1', required: true },
         { id: 32, name: 'Address 2', category: 'Address', fieldType: 'text', key: 'locations.address2' },
         { id: 33, name: 'Country', category: 'Address', fieldType: 'text', key: 'locations.country', disabled: true },
@@ -726,7 +649,7 @@ const VendorCreate = () => {
         { id: 36, name: 'Pin Code', category: 'Address', fieldType: 'text', key: 'locations.pincode', required: true },
     ];
 
-    // Address form fields
+
     const addressFields = [
         { id: 1, name: 'Nick Name', fieldType: 'text', key: 'nickName' },
         { id: 2, name: 'Address 1', fieldType: 'text', key: 'address1', required: true },
@@ -741,7 +664,7 @@ const VendorCreate = () => {
         { id: 11, name: 'Region', fieldType: 'select', key: 'regionId', options: region },
     ];
 
-    // Render file input field
+
     const renderFileField = (field) => (
         <View style={styles.fileContainer}>
             <TouchableOpacity
@@ -755,7 +678,7 @@ const VendorCreate = () => {
             {customer[field.key]?.uri && (
                 <View style={styles.imagePreviewContainer}>
                     <Image
-                        source={{ uri: customer[field.key].uri }}
+                        source={{ uri: customer[field.key].uri, cache: 'reload' }}
                         style={styles.imagePreview}
                     />
                     <TouchableOpacity
@@ -780,7 +703,7 @@ const VendorCreate = () => {
         </View>
     );
 
-    // Render form field based on type
+
     const renderField = (field) => {
         const value = field.key.includes('.')
             ? customer[field.key.split('.')[0]][field.key.split('.')[1]]
@@ -826,7 +749,7 @@ const VendorCreate = () => {
                 )}
 
                 {field.fieldType === 'select' && (() => {
-                    // normalize options → array of { label, value }
+
                     const items = (field.options || []).map(opt =>
                         typeof opt === 'string'
                             ? { label: opt, value: opt }
@@ -860,7 +783,7 @@ const VendorCreate = () => {
         );
     };
 
-    // Render address card
+
     const renderAddressCard = ({ item }) => (
         <View style={styles.addressCard}>
             <View style={styles.addressCardHeader}>
@@ -918,12 +841,7 @@ const VendorCreate = () => {
 
             <AlertBox {...isError} setShowAlert={closeAlert} />
 
-            {/* <View style={styles.header}>
 
-                <Text style={styles.headerText}>
-                    {isEditCustomer ? 'Edit Vendor' : 'Create Vendor'}
-                </Text>
-            </View>*/}
 
             {addresses.length > 0 ? (
                 <>
@@ -990,7 +908,7 @@ const VendorCreate = () => {
                             style={[styles.button, styles.saveButton]}
                             onPress={handleSave}
                         >
-                            <Text style={styles.buttonText}>Update</Text>
+                            <Text style={styles.buttonText}>{status === 'approve' ? "Approve" : "Update"}</Text>
                         </TouchableOpacity>
                     </View>
                 </>
@@ -1017,13 +935,13 @@ const VendorCreate = () => {
                             style={[styles.button, styles.saveButton]}
                             onPress={handleSave}
                         >
-                            <Text style={styles.buttonText}>Save</Text>
+                            <Text style={styles.buttonText}>{status === 'approve' ? "Approve" : status === 'edit' ? "Update" : "Save"}</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
             )}
 
-            {/* Address Modal */}
+
             <Modal
                 isVisible={isModalVisible}
                 onBackdropPress={() => {
@@ -1103,7 +1021,7 @@ const VendorCreate = () => {
     );
 };
 
-// Styles (unchanged)
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     View,
@@ -9,16 +7,17 @@ import {
     ActivityIndicator,
     Image,
     RefreshControl,
-    TouchableOpacity,
+    TouchableOpacity, TextInput
 } from 'react-native';
 import api from '../service/api';
 import AlertBox from '../common/AlertBox';
 import { font } from '../Settings/Theme';
 import { backendUrl, common } from '../common/Common';
+import Icon from 'react-native-vector-icons/Feather';
 import moment from 'moment';
 import { useNavigation } from '@react-navigation/native';
 
-const UnapprovedScreen = ({ route }) => {
+const UnapprovedProduct = ({ route }) => {
     const params = route.params;
     const navigation = useNavigation();
     const [products, setProducts] = useState([]);
@@ -26,6 +25,8 @@ const UnapprovedScreen = ({ route }) => {
     const [rowCount, setRowCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [vendorNames, setVendorNames] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
+
     const [refreshing, setRefreshing] = useState(false);
     const [isError, setIsError] = useState({
         message: '',
@@ -60,19 +61,17 @@ const UnapprovedScreen = ({ route }) => {
         }
     };
 
-    const fetchProducts = async (pageNum = 0) => {
+    const fetchProducts = async () => {
         try {
             setIsLoading(true);
-            const res = await api.get(
-                `draftProduct/products/search?page=${pageNum}&size=${pagination.pageSize}&searchTerm=${''}&reqInfo=${params?.requestInfo}`
-            );
+            const url = `draftProduct/products/search?page=${pagination.pageIndex}&size=${pagination.pageSize}&searchTerm=${searchQuery}&reqInfo=${params?.requestInfo}`;
+            const res = await api.get(url);
             const newProducts = res?.response?.content?.map((item) => ({
                 ...item,
-                image: item.vendorImage?.replace('/api', ''),
+                image: item?.image?.replace('/api', ''),
             }));
             setProducts(newProducts);
             setRowCount(res.response?.totalElements || 0);
-
 
             const uniqueVendorIds = [
                 ...new Set(newProducts.map((p) => p.vendorId).filter(Boolean)),
@@ -98,17 +97,21 @@ const UnapprovedScreen = ({ route }) => {
 
     useEffect(() => {
         setProducts([]);
-        fetchProducts(pagination.pageIndex);
-    }, [pagination.pageIndex, pagination.pageSize]);
+        fetchProducts();
+    }, [pagination.pageIndex, pagination.pageSize, searchQuery]);
 
     const onRefresh = () => {
         setRefreshing(true);
         setProducts([]);
         setPagination({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize });
-
-        fetchProducts(0);
+        fetchProducts();
     };
-
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setPagination({ pageIndex: 0, pageSize: 10 });
+        setProducts([]);
+        fetchProducts();
+    };
     const columns = useMemo(
         () => [
             {
@@ -149,30 +152,92 @@ const UnapprovedScreen = ({ route }) => {
         [vendorNames]
     );
 
+    const handleRequestInfo = async (product) => {
+        setIsLoading(true);
+        try {
+            const id = product?.draftProductId;
+            await api.get(`draftProduct/updateRequestInfo/${id}`);
+            setProducts([]);
+            setPagination({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize });
+            fetchProducts(pagination.pageIndex);
+        }
+        catch (error) {
+            console.log('Error requesting product info:', error?.response || error);
+            setIsError({
+                message: error?.response?.data?.message || 'Failed to save product status   ',
+                heading: 'Error',
+                isRight: false,
+                rightButtonText: 'OK',
+                triggerFunction: () => { },
+                setShowAlert: closeAlert,
+                showAlert: true,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+
+    };
+
+    const handleApproval = async (product) => {
+        setIsLoading(true);
+        try {
+            const id = product?.draftProductId;
+            await api.get(`draftProduct/updateUnApproved/${id}`);
+            setProducts([]);
+            setPagination({ pageIndex: pagination.pageIndex, pageSize: pagination.pageSize });
+            fetchProducts(pagination.pageIndex);
+        }
+        catch (error) {
+            console.log('Error approving product:', error?.response || error);
+            setIsError({
+                message: error?.response?.data?.message || 'Failed to save product status',
+                heading: 'Error',
+                isRight: false,
+                rightButtonText: 'OK',
+                triggerFunction: () => { },
+                setShowAlert: closeAlert,
+                showAlert: true,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const renderCard = ({ item, index }) => {
         return (
-            <TouchableOpacity style={styles.cardContainer} key={index} onPress={() => {
-                navigation.navigate('ProductEdit', { productId: item?.draftProductId, statusProduct: 'unapproved' });
-            }}>
-                {item.image ? (
-                    <Image
-                        source={{ uri: `${backendUrl}${item.image.replace('/api', '')}` }}
-                        style={styles.productImage}
-                    />
-                ) : (
-                    <View style={styles.productImage} />
-                )}
-                <View style={{}}>
-                    {columns.map((col, colIndex) => (
-                        <View key={colIndex} style={styles.cardRow}>
-                            {/* <Text style={styles.cardLabel}>{col.header}:</Text> */}
-                            <Text style={styles.cardValue}>
-                                {col.accessorFn
-                                    ? col.accessorFn(item, index)
-                                    : item[col.accessorKey] || 'N/A'}
-                            </Text>
-                        </View>
-                    ))}
+            <TouchableOpacity
+                style={styles.cardContainer}
+                key={index}
+                onPress={() => {
+                    navigation.navigate('ProductEdit', {
+                        productId: item?.draftProductId,
+                        statusProduct: 'unapproved',
+                        vendorId: item?.vendorId,
+                        vendorUsername: vendorNames[item?.vendorId] || 'N/A'
+                    });
+                }}
+            >
+                <View style={styles.cardContent}>
+                    {item.vendorImage ? (
+                        <Image
+                            source={{ uri: `${backendUrl}${item.vendorImage.replace('/api', '')}`, cache: 'reload' }}
+                            style={styles.productImage}
+                        />
+                    ) : (
+                        <View style={styles.productImage} />
+                    )}
+                    <View style={styles.detailsContainer}>
+                        {columns.map((col, colIndex) => (
+                            <View key={colIndex} style={styles.cardRow}>
+                                {/* <Text style={styles.cardLabel}>{col.header}:</Text> */}
+                                <Text style={styles.cardValue}>
+                                    {col.accessorFn
+                                        ? col.accessorFn(item, index)
+                                        : item[col.accessorKey] || 'N/A'}
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
                 </View>
             </TouchableOpacity>
         );
@@ -198,6 +263,22 @@ const UnapprovedScreen = ({ route }) => {
                 <Text style={styles.headerText}>
                     Product{rowCount > 1 ? 's' : ''} ({rowCount})
                 </Text>
+                <View style={styles.searchContainer}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChangeText={(text) => { setPagination({ pageIndex: 0, pageSize: 10 }); setSearchQuery(text); }}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.clearButton}
+                            onPress={handleClearSearch}
+                        >
+                            <Icon name="x" size={20} color="#666" />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
             <ScrollView
                 contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 }]}
@@ -258,8 +339,9 @@ const UnapprovedScreen = ({ route }) => {
                         <Text style={styles.paginationText}>Next</Text>
                     </TouchableOpacity>
                 </View>
+
             )}
-        </View>
+        </View >
     );
 };
 
@@ -267,13 +349,31 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8F8F8',
+    }, searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        borderRadius: 5,
+        marginRight: 10,
+        paddingHorizontal: 10,
+    },
+    searchInput: {
+        height: 40,
+        fontSize: 14,
+        fontFamily: font.regular,
+        color: '#333',
+        flex: 1,
+    },
+    clearButton: {
+        padding: 5,
     },
     header: {
         paddingVertical: 15,
         paddingHorizontal: 15,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: 5,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
         backgroundColor: '#fff',
@@ -282,6 +382,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 6,
+        flexDirection: 'column',
     },
     headerText: {
         fontSize: 20,
@@ -303,12 +404,18 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 6,
         elevation: 3,
+        flexDirection: 'column',
+    },
+    cardContent: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+    },
+    detailsContainer: {
+        flex: 1,
+        marginLeft: 10,
     },
     cardRow: {
-        flexDirection: 'column',
+        flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 8,
     },
@@ -323,13 +430,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#333',
         flex: 1,
-        alignSelf: 'flex-end'
+        textAlign: 'right',
     },
     productImage: {
         width: 150,
         height: 150,
         borderRadius: 4,
-        marginBottom: 10,
         backgroundColor: '#ccc',
         alignSelf: 'center',
     },
@@ -380,6 +486,31 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         zIndex: 1000,
     },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 10,
+
+        padding: 10,
+        borderRadius: 5,
+    },
+    actionButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 5,
+        marginHorizontal: 5,
+    },
+    requestButton: {
+        backgroundColor: '#007AFF',
+    },
+    approveButton: {
+        backgroundColor: '#28A745',
+    },
+    buttonText: {
+        color: '#fff',
+        fontFamily: font.semiBold,
+        fontSize: 14,
+    },
 });
 
-export default UnapprovedScreen;
+export default UnapprovedProduct;
